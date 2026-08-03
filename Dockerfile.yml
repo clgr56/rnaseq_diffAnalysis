@@ -1,0 +1,12 @@
+FROM r-base:4.6.1
+
+WORKDIR /usr/workspace/
+
+RUN << EOF
+apt-get update
+apt-get install -y libcurl4-openssl-dev libxml2-dev 
+RUN R -e "install.packages('BiocManager')"
+RUN R -e "BiocManager::install(c('tximport','jsonlite','readr', 'GenomicFeatures','DRIMSeq','txdbmaker'))"
+
+COPY script/drimseq.R /usr/workspace/script/drimseq.R
+VOLUME [ "/data" ]
