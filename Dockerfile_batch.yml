@@ -1,0 +1,10 @@
+FROM r-base:4.6.1
+
+WORKDIR /usr/workspace/
+RUN mkdir results/feature_counts
+RUN << EOF
+apt-get update
+
+
+RUN R -e "install.packages('BiocManager')"
+RUN R -e "BiocManager::install(c('sva','ggplot2','gridExtra', 'edgeR','UpSetR','grid'))"

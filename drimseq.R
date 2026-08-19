@@ -4,10 +4,10 @@ library("GenomicFeatures")
 library("DRIMSeq")
 library("txdbmaker")
 
-csv_dir <- "results/"
+csv_dir <- "results"
 samps <- read.csv(file.path(csv_dir, "samples.csv"))
 head(samps)
-quant_dir <- "results/salmon/"
+quant_dir <- "results/salmon"
 files <- file.path(quant_dir, samps$sample_id, "quant.sf")
 names(files) <- samps$sample_id
 head(files)
@@ -17,7 +17,7 @@ cts <- txi$counts
 cts <- cts[rowSums(cts)>0,]
 head(cts)
 
-gtf <- "ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
+gtf <- "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
 txdb.filename <- "gencode.50.annotation.sqlite"
 txdb <- makeTxDbFromGFF(gtf)
 saveDb(txdb, txdb.filename)
