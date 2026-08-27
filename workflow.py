@@ -2,8 +2,28 @@ import glob
 import subprocess
 
 
-def trim():
+def fastQC():
     f_list = []
+    out_dir = "results/fastqc"
+    for fname in glob.glob('data/Berlin_AKI_tubuloid_bulk_RNA_seq/*'):
+        f_list.append(fname)
+    print("fastQC")
+    print(len(f_list))
+    for f in f_list:
+        print(f)
+        subprocess.run(["fastqc", f, "--outdir", out_dir])
+
+
+def multiQC():
+    files_dir = "results/"#fastqc/
+    out_dir = "results/multiqc"
+    print("multiQC")
+    subprocess.run(["multiqc", files_dir, "--outdir", out_dir])
+
+
+def fastp():
+    f_list = []
+    out_dir = "results/fastp_trimmed/"
     for fname in glob.glob('data/Berlin_AKI_tubuloid_bulk_RNA_seq/*1.fq.gz'):
         f_list.append(fname)
     print("trimming")
@@ -11,7 +31,34 @@ def trim():
         print(f)
         f2 = f[:-7]
         f2 = f2 + '2.fq.gz'
-        subprocess.run(["trim_galore", "--paired", f, f2, "-o", "data/data_trimmed/"])
+        out_1 = out_dir+f[:-7].split('/')[2]+"1_trimmed.fq.gz"
+        out_2 = out_dir+f[:-7].split('/')[2]+"2_trimmed.fq.gz"
+        subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", 8, "--detect_adaüter_for-pe", "--trim_poly_x"])
+
+
+def trim():
+    f_list = []
+    out_dir = "data/trimmed/"
+    for fname in glob.glob('data/Berlin_AKI_tubuloid_bulk_RNA_seq/*1.fq.gz'):
+        f_list.append(fname)
+    print("trimming")
+    for f in f_list:
+        print(f)
+        f2 = f[:-7]
+        f2 = f2 + '2.fq.gz'
+        subprocess.run(["trim_galore", "--paired", f, f2, "-o", out_dir])
+
+
+def trimmed_fsatqc():
+    f_list = []
+    out_dir = "results/fastqc_trimmed/"
+    for fname in glob.glob('results/fastp_trimmed/*.fq.gz'):
+        f_list.append(fname)
+    print("fastQC")
+    print(len(f_list))
+    for f in f_list:
+        print(f)
+        subprocess.run(["fastqc", f, "--outdir", out_dir])
 
 
 def iso_quant():
@@ -83,7 +130,11 @@ def drimseq():
 
 
 if __name__=="__main__":
+    fastQC()
+    fastp()
+    trimmed_fsatqc()
+    multiQC()
     #trim()
     #iso_quant()
     #align()
-    quant_mapper_gene()
+    #quant_mapper_gene()
