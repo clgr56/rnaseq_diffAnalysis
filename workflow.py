@@ -15,7 +15,7 @@ def fastQC():
 
 
 def multiQC():
-    files_dir = "results/"#fastqc/
+    files_dir = "results/"
     out_dir = "results/multiqc"
     print("multiQC")
     subprocess.run(["multiqc", files_dir, "--outdir", out_dir])
@@ -33,7 +33,10 @@ def fastp():
         f2 = f2 + '2.fq.gz'
         out_1 = out_dir+f[:-7].split('/')[2]+"1_trimmed.fq.gz"
         out_2 = out_dir+f[:-7].split('/')[2]+"2_trimmed.fq.gz"
-        subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", 8, "--detect_adaüter_for-pe", "--trim_poly_x"])
+        out_report = out_dir+f[:-7].split('/')[2]+"report"
+        out_html = out_report+'.html'
+        out_json = out_report+'.json'
+        subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", "8", "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json])
 
 
 def trim():
@@ -78,20 +81,24 @@ def iso_quant():
 
 def align():
     f_list = []
-    for fname in glob.glob('data/trimmed/*1.fq'):
+    for fname in glob.glob('data/trimmed/*1.fq.gz'):#trying gz again
         f_list.append(fname)
-    print("STAR indexing")
-    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", "results/star/index/", "--genomeFastaFiles", "data/ref/GRCh38.p14.genome.fa", "--sjdbGTFfile", "data/ref/gencode.v50.annotation.gtf", "--sjdbOverhang", "149", "--genomeSAindexNbases", "11"])
+    print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
+    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", "results/star/index/", "--genomeFastaFiles", "data/ref/GRCh38.p14.genome.fa", "--sjdbGTFfile", "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf", "--sjdbOverhang", "149", "--runThreadN", '8'])
     #--sjdbOverhang max.length.read -1
     print("STAR align")
     for f in f_list:
         print(f)
-        f2 = f[:-10]
-        f2 = f2 + '2_val_2.fq'
+        f2 = f[:-12] #10
+        f2 = f2 + '2_val_2.fq.gz'
         print(f2)
-        f_base = 'results/star/' + f2[13:-11] + '_trimmmed'
-        print(f_base)
-        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '8', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "Standard", "--quantMode", "GeneCounts"])
+        f_base = 'results/star/' + f2[13:-13] + '_trimmmed' #f2[13:-11]
+        print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
+        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '8', "--readFilesIn", f, f2, '--readFIlesCommand', 'gunzip', '-c', "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "Standard", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',
+
+
+def sam_bam():
+    pass
 
 
 def quant_mapper_gene():
@@ -121,8 +128,8 @@ def quant_mapper_gene():
 
 
 def deseq2():
-    #do smth with pydeseq2
-    pass
+    cmd = ['python3', 'deseq.py']
+    subprocess.run(cmd,check=True)
 
 
 def drimseq():
