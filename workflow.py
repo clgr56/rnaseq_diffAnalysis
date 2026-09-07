@@ -5,7 +5,7 @@ import subprocess
 def fastQC():
     f_list = []
     out_dir = "results/fastqc"
-    for fname in glob.glob('data/Berlin_AKI_tubuloid_bulk_RNA_seq/*'):
+    for fname in glob.glob('data/SLR24_15MioSeqDepth/*'):
         f_list.append(fname)
     print("fastQC")
     print(len(f_list))
@@ -24,7 +24,7 @@ def multiQC():
 def fastp():
     f_list = []
     out_dir = "results/fastp_trimmed/"
-    for fname in glob.glob('data/Berlin_AKI_tubuloid_bulk_RNA_seq/*1.fq.gz'):
+    for fname in glob.glob('data/SLR24_15MioSeqDepth/*1.fq.gz'):
         f_list.append(fname)
     print("trimming")
     for f in f_list:
@@ -42,7 +42,7 @@ def fastp():
 def trim():
     f_list = []
     out_dir = "data/trimmed/"
-    for fname in glob.glob('data/Berlin_AKI_tubuloid_bulk_RNA_seq/*1.fq.gz'):
+    for fname in glob.glob('data/SLR24_15MioSeqDepth/*1.fq.gz'):
         f_list.append(fname)
     print("trimming")
     for f in f_list:
@@ -141,7 +141,7 @@ if __name__=="__main__":
     fastp()
     trimmed_fsatqc()
     multiQC()
-    #trim()
-    #iso_quant()
-    #align()
-    #quant_mapper_gene()
+    trim()
+    iso_quant()
+    align()
+    quant_mapper_gene()
