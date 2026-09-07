@@ -97,8 +97,55 @@ def align():
         subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '8', "--readFilesIn", f, f2, '--readFIlesCommand', 'gunzip', '-c', "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "Standard", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',
 
 
-def sam_bam():
-    pass
+def bam_bai():
+    f_list = []
+    for fname in glob.glob(f"results/star/*.bam"):
+        f_list.append(fname)
+    for f in f_list:
+        cmd = ['samtools', 'index', '-M', '--bai', '--threads', '8'] #     Interpret all filename arguments as alignment files to be indexed individually
+        cmd.extend(f)
+        subprocess.run(cmd, check=True)
+
+
+
+def sam_depth():
+    f_list = []
+    out_dir = "results/sam/"
+    for fname in glob.glob(f"results/star/*.bam"):
+        f_list.append(fname)
+    for f in f_list:
+        out_f = f.split('/')[2]
+        out = out_dir+out_f[:-4]+'.depth.txt'
+        cmd = ['samtools', '-f', f, '-o', out]
+        subprocess.run(cmd, check=True)
+
+
+
+def sam_QC():
+    f_list = []
+    out_dir = "results/sam/"
+    for fname in glob.glob(f"results/star/*.bam"):
+        f_list.append(fname)
+    for f in f_list:
+        out_f = f.split('/')[2]
+        out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
+        cmd = ['samtools', 'flagstat', '@', '8', '-O', 'tsv', '>', out_flagstat]
+        subprocess.run(cmd, check=True)
+        out_stats = out_dir+out_f[:-4]+'.stats.txt'
+        cmd_stats = ['samtools', 'stats', '--threads', '8', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f, '>', out_stats]
+        subprocess.run(cmd_stats, check=True)
+
+
+def picard_markdup():
+    f_list = []
+    out_dir = "results/sam/"
+    for fname in glob.glob(f"results/star/*.bam"):
+        f_list.append(fname)
+    for f in f_list:
+        out_f = f.split('/')[2]
+        out = out_dir+out_f[:-4]+".markdup.bam"
+        out_metrics = out_dir+out_f[:-4]+".metrics.txt"
+        cmd = ['java', '-jar', 'picard.jar', 'MarkDuplicates', '--INPUT', f, '--OUTPUT', out, '__METRICS_FILE', out_metrics]
 
 
 def quant_mapper_gene():
@@ -137,11 +184,15 @@ def drimseq():
 
 
 if __name__=="__main__":
-    fastQC()
-    fastp()
-    trimmed_fsatqc()
-    multiQC()
-    trim()
-    iso_quant()
+    #fastQC()
+    #fastp()
+    #trimmed_fsatqc()
+    #multiQC()
+    #trim()
+    #iso_quant()
     align()
-    quant_mapper_gene()
+    #bam_bai()
+    #sam_depth()
+    #sam_QC()
+    #picard_markdup()
+    #quant_mapper_gene()
