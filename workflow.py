@@ -79,13 +79,20 @@ def iso_quant():
         subprocess.run(["salmon", "quant", "-i", "results/salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base])
         #--validateMapping depricated
 
-def align():
+
+def star_align_idx():
     f_list = []
-    for fname in glob.glob('data/trimmed/*1.fq.gz'):#trying gz again
+    for fname in glob.glob('data/trimmed/*1.fq.gz'):
         f_list.append(fname)
     print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
     subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", "results/star/index/", "--genomeFastaFiles", "data/ref/GRCh38.p14.genome.fa", "--sjdbGTFfile", "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf", "--sjdbOverhang", "149", "--runThreadN", '8'])
     #--sjdbOverhang max.length.read -1
+
+
+def star_align():
+    f_list = []
+    for fname in glob.glob('data/trimmed/*1.fq.gz'):#trying gz again
+        f_list.append(fname)
     print("STAR align")
     for f in f_list:
         print(f)
@@ -190,7 +197,8 @@ if __name__=="__main__":
     #multiQC()
     #trim()
     #iso_quant()
-    align()
+    #star_align_idx()
+    star_align()
     #bam_bai()
     #sam_depth()
     #sam_QC()
