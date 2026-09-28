@@ -36,7 +36,7 @@ def fastp():
         out_report = out_dir+f[:-7].split('/')[2]+"report"
         out_html = out_report+'.html'
         out_json = out_report+'.json'
-        subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", "8", "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json])
+        subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", "16", "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json])
 
 
 def trim():
@@ -85,7 +85,7 @@ def star_align_idx():
     for fname in glob.glob('data/trimmed/*1.fq.gz'):
         f_list.append(fname)
     print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
-    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", "results/star/index/", "--genomeFastaFiles", "data/ref/GRCh38.p14.genome.fa", "--sjdbGTFfile", "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf", "--sjdbOverhang", "149", "--runThreadN", '8'])
+    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", "results/star/index/", "--genomeFastaFiles", "data/ref/GRCh38.p14.genome.fa", "--sjdbGTFfile", "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf", "--sjdbOverhang", "149", "--runThreadN", '16'])
     #--sjdbOverhang max.length.read -1
 
 
@@ -99,9 +99,9 @@ def star_align():
         f2 = f[:-10] #12
         f2 = f2 + '2_val_2.fq'#.gz
         print(f2)
-        f_base = 'results/star/' + f2[13:-11] + 'trimmmed' #f2[13:-13]
+        f_base = 'results/star/' + f2[13:-11] + '_trimmmed' #f2[13:-13]
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
-        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '8', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
+        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '16', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
 
 
 def bam_bai():
@@ -109,7 +109,7 @@ def bam_bai():
     for fname in glob.glob(f"results/star/*.bam"):
         f_list.append(fname)
     for f in f_list:
-        cmd = ['samtools', 'index', '-M', '--bai', '--threads', '8'] #     Interpret all filename arguments as alignment files to be indexed individually
+        cmd = ['samtools', 'index', '-M', '--bai', '--threads', '16'] #     Interpret all filename arguments as alignment files to be indexed individually
         cmd.append(f)
         subprocess.run(cmd, check=True)
 
@@ -123,7 +123,7 @@ def sam_depth():
     for f in f_list:
         out_f = f.split('/')[2]
         out = out_dir+out_f[:-4]+'.depth.txt'
-        cmd = ['samtools', '-f', f, '-o', out]
+        cmd = ['samtools', 'depth' '-f', f, '-o', out]
         subprocess.run(cmd, check=True)
 
 
@@ -139,7 +139,7 @@ def sam_QC():
         cmd = ['samtools', 'flagstat', '@', '8', '-O', 'tsv', '>', out_flagstat]
         subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
-        cmd_stats = ['samtools', 'stats', '--threads', '8', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f, '>', out_stats]
+        cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f, '>', out_stats]
         subprocess.run(cmd_stats, check=True)
 
 
