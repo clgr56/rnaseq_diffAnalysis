@@ -139,11 +139,15 @@ def sam_QC():
     for f in f_list:
         out_f = f.split('/')[2]
         out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
-        cmd = ['samtools', 'flagstats', '-@', '16', '-O', 'tsv', f, '>', out_flagstat]
-        subprocess.run(cmd, check=True)
+        cmd = ['samtools', 'flagstats', '-@', '16', '-O', 'tsv', f]#, '>', out_flagstat
+        with open(out_flagstat, "w",encoding="utf-8") as f:
+            subprocess.call(cmd,stdout=f)
+        #subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
-        cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f, '>', out_stats]
-        subprocess.run(cmd_stats, check=True)
+        cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f]#, '>', out_stats
+        with open(out_stats,"w",encoding="utf-8") as f:
+            subprocess.call(cmd_stats, stdout=f)
+        #subprocess.run(cmd_stats, check=True)
 
 
 def picard_markdup():
@@ -207,6 +211,6 @@ if __name__=="__main__":
     sam_depth()
     sam_QC()
     picard_markdup()
-    #quant_mapper_gene()
+    quant_mapper_gene()
     #deseq2()
     #multiQC()
