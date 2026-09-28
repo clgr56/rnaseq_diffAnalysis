@@ -97,7 +97,7 @@ def star_align():
     for f in f_list:
         print(f)
         f2 = f[:-10] #12
-        f2 = f2 + '2_val_2.fq.gz'
+        f2 = f2 + '2_val_2.fq'#.gz
         print(f2)
         f_base = 'results/star/' + f2[13:-11] + '_trimmmed' #f2[13:-13]
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
