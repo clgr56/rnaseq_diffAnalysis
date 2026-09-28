@@ -139,7 +139,7 @@ def sam_QC():
     for f in f_list:
         out_f = f.split('/')[2]
         out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
-        cmd = ['samtools', 'flagstat', '-@', '16', '-O', 'tsv', f, '>', out_flagstat]
+        cmd = ['samtools', 'flagstats', '-@', '16', '-O', 'tsv', f, '>', out_flagstat]
         subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
         cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f, '>', out_stats]
