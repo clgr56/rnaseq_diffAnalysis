@@ -101,7 +101,7 @@ def star_align():
         f2 = f2 + '2_val_2.fq'#.gz
         print(f2)
         f_base = 'results/star/' + f2[13:-11] + '_trimmmed' #f2[13:-13]
-        RG = 'ID:' + f2[13:-11]
+        RG = 'ID:' + f2[13:-11] +'\tSM:' + f2[13:-11]
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
         subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '16', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--outSAMattrRGline", RG, "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
 
@@ -138,7 +138,7 @@ def sam_QC():
     for f in f_list:
         out_f = f.split('/')[2]
         out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
-        cmd = ['samtools', 'flagstat', '@', '8', '-O', 'tsv', '>', out_flagstat]
+        cmd = ['samtools', 'flagstat', '-@', '16', '-O', 'tsv', f, '>', out_flagstat]
         subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
         cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f, '>', out_stats]
@@ -202,10 +202,10 @@ if __name__=="__main__":
     #iso_quant()
     #star_align_idx()
     star_align()
-    #bam_bai()
-    #sam_depth()
-    #sam_QC()
-    #picard_markdup()
+    bam_bai()
+    sam_depth()
+    sam_QC()
+    picard_markdup()
     #quant_mapper_gene()
     #deseq2()
     #multiQC()
