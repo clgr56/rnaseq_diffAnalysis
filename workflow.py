@@ -1,4 +1,5 @@
 import glob
+import numpy as np
 import subprocess
 
 
@@ -100,8 +101,9 @@ def star_align():
         f2 = f2 + '2_val_2.fq'#.gz
         print(f2)
         f_base = 'results/star/' + f2[13:-11] + '_trimmmed' #f2[13:-13]
+        RG = str(np.random.randint(100-999)) + ':' + f2[13:-11]
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
-        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '16', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
+        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '16', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--outSAMattrRGline", RG, "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
 
 
 def bam_bai():
@@ -123,7 +125,7 @@ def sam_depth():
     for f in f_list:
         out_f = f.split('/')[2]
         out = out_dir+out_f[:-4]+'.depth.txt'
-        cmd = ['samtools', 'depth' '-f', f, '-o', out]
+        cmd = ['samtools', 'depth', f, '-o', out]
         subprocess.run(cmd, check=True)
 
 
