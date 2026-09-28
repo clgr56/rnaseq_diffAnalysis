@@ -18,8 +18,8 @@ def read_in():
     #write file for names, condition, time, batch
     print(in_deseq2)
     condition = ['B','C','C', 'A', 'A', 'B', 'C', 'B', 'A', 'A', 'A', 'A'] #A=IR, B=GM, C=UC
-    time = ['Y', 'Y', 'Y', 'X', 'Y', 'Y', 'Y', 'Y', 'Y', 'X', 'Y', 'X'] #x=3h, y=24h
-    batch = ['pA', 'pC', 'pB', 'pA', 'pA', 'pB', 'pA', 'pC', 'pC', 'pB', 'pB', 'pC']
+    #time = ['Y', 'Y', 'Y', 'X', 'Y', 'Y', 'Y', 'Y', 'Y', 'X', 'Y', 'X'] #x=3h, y=24h
+    #batch = ['pA', 'pC', 'pB', 'pA', 'pA', 'pB', 'pA', 'pC', 'pC', 'pB', 'pB', 'pC']
     sample_names = [re.split(r"[/\s.]+",x)[2] for x in in_deseq2.index]
     in_deseq2.index = sample_names
     metadata = pd.DataFrame({'condition':condition,'time':time, 'batch':batch}, index=sample_names)

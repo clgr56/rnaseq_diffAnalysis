@@ -52,7 +52,7 @@ def trim():
         subprocess.run(["trim_galore", "--paired", f, f2, "-o", out_dir])
 
 
-def trimmed_fsatqc():
+def trimmed_fastqc():
     f_list = []
     out_dir = "results/fastqc_trimmed/"
     for fname in glob.glob('results/fastp_trimmed/*.fq.gz'):
@@ -91,17 +91,17 @@ def star_align_idx():
 
 def star_align():
     f_list = []
-    for fname in glob.glob('data/trimmed/*1.fq.gz'):#trying gz again
+    for fname in glob.glob('data/trimmed/*1.fq'):#trying gz again
         f_list.append(fname)
     print("STAR align")
     for f in f_list:
         print(f)
-        f2 = f[:-12] #10
+        f2 = f[:-10] #12
         f2 = f2 + '2_val_2.fq.gz'
         print(f2)
-        f_base = 'results/star/' + f2[13:-13] + '_trimmmed' #f2[13:-11]
+        f_base = 'results/star/' + f2[13:-11] + '_trimmmed' #f2[13:-13]
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
-        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '8', "--readFilesIn", f, f2, '--readFIlesCommand', 'gunzip', '-c', "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "Standard", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',
+        subprocess.run(["STAR", "--genomeDir", "results/star/index/", "--runThreadN", '8', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "Standard", "--quantMode", "GeneCounts"]) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', 
 
 
 def bam_bai():
@@ -199,8 +199,10 @@ if __name__=="__main__":
     #iso_quant()
     #star_align_idx()
     star_align()
-    #bam_bai()
-    #sam_depth()
-    #sam_QC()
-    #picard_markdup()
-    #quant_mapper_gene()
+    bam_bai()
+    sam_depth()
+    sam_QC()
+    picard_markdup()
+    quant_mapper_gene()
+    deseq2()
+    multiQC()
