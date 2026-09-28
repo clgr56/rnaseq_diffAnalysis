@@ -110,7 +110,7 @@ def bam_bai():
         f_list.append(fname)
     for f in f_list:
         cmd = ['samtools', 'index', '-M', '--bai', '--threads', '8'] #     Interpret all filename arguments as alignment files to be indexed individually
-        cmd.extend(f)
+        cmd.append(f)
         subprocess.run(cmd, check=True)
 
 
