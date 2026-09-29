@@ -190,7 +190,11 @@ def quant_mapper_gene():
 
 
 def deseq2():
+    cmd = ['conda', 'activate', 'pydeseq2']
+    subprocess.run(cmd,check=True)
     cmd = ['python3', 'deseq.py']
+    subprocess.run(cmd,check=True)
+    cmd = ['conda', 'deactivate', 'pydeseq2']
     subprocess.run(cmd,check=True)
 
 
