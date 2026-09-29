@@ -140,13 +140,13 @@ def sam_QC():
         out_f = f.split('/')[2]
         out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
         cmd = ['samtools', 'flagstats', '-@', '16', '-O', 'tsv', f]#, '>', out_flagstat
-        with open(out_flagstat, "w",encoding="utf-8") as f:
-            subprocess.call(cmd,stdout=f)
+        with open(out_flagstat, "w",encoding="utf-8") as file:
+            subprocess.call(cmd,stdout=file)
         #subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
         cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f]#, '>', out_stats
-        with open(out_stats,"w",encoding="utf-8") as f:
-            subprocess.call(cmd_stats, stdout=f)
+        with open(out_stats,"w",encoding="utf-8") as file:
+            subprocess.call(cmd_stats, stdout=file)
         #subprocess.run(cmd_stats, check=True)
 
 
@@ -167,7 +167,7 @@ def quant_mapper_gene():
     mode = ['all']#'UC', 'GM', 'IR'
     for mod in mode:
         f_list = []
-        if mode != 'all':
+        if mod != 'all':
             for fname in glob.glob(f"results/star/*{mod}*.bam"):
                 f_list.append(fname)
         else:
@@ -176,7 +176,7 @@ def quant_mapper_gene():
         string_list = f_list#" ".join(f_list)
         print(string_list)
         outfile = f'results/feature_counts/counts_{mod}_feature.txt'
-        cmd = ['featureCounts', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', 'data/ref/gencode.v50.annotation.gtf']
+        cmd = ['featureCounts', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', 'data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf']
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
@@ -206,11 +206,11 @@ if __name__=="__main__":
     #trim()
     #iso_quant()
     #star_align_idx()
-    star_align()
-    bam_bai()
-    sam_depth()
-    sam_QC()
-    picard_markdup()
-    quant_mapper_gene()
-    #deseq2()
+    #star_align()
+    #bam_bai()
+    #sam_depth()
+    #sam_QC()
+    #picard_markdup()
+    #quant_mapper_gene()
+    deseq2()
     #multiQC()

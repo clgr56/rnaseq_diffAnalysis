@@ -13,20 +13,16 @@ from pydeseq2.ds import DeseqStats
 
 def read_in():
     DATA_PATH = "results/feature_counts/"
-    counts_df = pd.read_csv(os.path.join(DATA_PATH, "counts_all_reads.txt"), skiprows=1, sep='\t', index_col=0)
+    counts_df = pd.read_csv(os.path.join(DATA_PATH, "counts_all_feature.txt"), skiprows=1, sep='\t', index_col=0)#config with counts_{mod}_{reads_feature}
     in_deseq2 = counts_df.iloc[:,-12:].T
     #write file for names, condition, time, batch
     print(in_deseq2)
-    condition = ['B','C','C', 'A', 'A', 'B', 'C', 'B', 'A', 'A', 'A', 'A'] #A=IR, B=GM, C=UC
-    #time = ['Y', 'Y', 'Y', 'X', 'Y', 'Y', 'Y', 'Y', 'Y', 'X', 'Y', 'X'] #x=3h, y=24h
-    #batch = ['pA', 'pC', 'pB', 'pA', 'pA', 'pB', 'pA', 'pC', 'pC', 'pB', 'pB', 'pC']
+    condition=['carcinoma','healthy']#config
     sample_names = [re.split(r"[/\s.]+",x)[2] for x in in_deseq2.index]
     in_deseq2.index = sample_names
-    metadata = pd.DataFrame({'condition':condition,'time':time, 'batch':batch}, index=sample_names)
+    metadata = pd.DataFrame({'condition':condition}, index=sample_names)#config
     print(metadata)
-    #ignore 3h IR
-    met = metadata.loc[(metadata['time']=='Y')] # without IR 3h
-    del met['time']
+    met = metadata
     i_d = in_deseq2.loc[in_deseq2.index.isin(met.index)]
     print(met)
     print(i_d)
@@ -47,7 +43,7 @@ def deseq2(data_in, metadata):
     dds = DeseqDataSet(
         counts=counts_df,
         metadata=metadata,
-        design= "~batch + condition",
+        design= "~condition",#config
         refit_cooks=True,
         inference=inference,
     )
@@ -58,7 +54,7 @@ def deseq2(data_in, metadata):
 def stats(dds):
     ds = DeseqStats(
         dds,
-        contrast=['condition', 'A', 'B'], #confusing namespace in output table
+        contrast=['condition', 'carcinoma','healthy'], #confusing namespace in output table
         alpha=0.05,
         cooks_filter=True,
         independent_filter=True,
