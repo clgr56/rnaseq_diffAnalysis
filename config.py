@@ -1,10 +1,10 @@
-data_folder="data/SLR24_15MioSeqDepth/"
+data_folder=["SLR24_15MioSeqDepth/","SLR24_15MioSeqDepth/"]
 ref_transcript_file="data/ref/gencode.v50.transcripts.fa"
 ref_gene_fasta="data/ref/GRCh38.p14.genome.fa"
 ref_anno_gtf="data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
 #star_align: max(length)-1
 sjdbOverhang=149
-add_read_group=["--outSAMattrRGline", RG, SM,]
+#add_read_group=["--outSAMattrRGline", RG, SM,]
 #overal config
 threads=16
 #feature_counts
@@ -19,7 +19,7 @@ mode=['A3','K3','all']
 #met = metadata.loc[(metadata['time']=='Y')]  # without IR 3h #ignore 3h IR
 #design= "~batch + condition"
 ##15
-condition=['carcinoma','healthy']
-metadata = pd.DataFrame({'condition':condition}, index=sample_names)
-design= "~condition"
+#condition=['carcinoma','healthy']
+#metadata = pd.DataFrame({'condition':condition}, index=sample_names)
+#design= "~condition"
 ##30

@@ -14,7 +14,8 @@ from pydeseq2.ds import DeseqStats
 def read_in():
     DATA_PATH = "results/feature_counts/"
     counts_df = pd.read_csv(os.path.join(DATA_PATH, "counts_all_feature.txt"), skiprows=1, sep='\t', index_col=0)#config with counts_{mod}_{reads_feature}
-    in_deseq2 = counts_df.iloc[:,-12:].T
+    in_de = counts_df.iloc[:,-12:].T
+    in_deseq2 = in_de.filter(regex='^results', axis=0)
     #write file for names, condition, time, batch
     print(in_deseq2)
     condition=['carcinoma','healthy']#config
@@ -39,6 +40,16 @@ def deseq2(data_in, metadata):
     counts_df = data_in
     genes_to_keep = counts_df.columns[counts_df.sum(axis=0) >= 10]
     counts_df = counts_df[genes_to_keep]
+    print(counts_df)
+    #print(counts_df[pd.to_numeric(counts_df['SLR24_A3_trimmmedAligned'],errors='coerce').isna()])
+    print(counts_df.shape)
+    print(counts_df.index)
+    print(counts_df.columns[:10])
+    print(counts_df.head())
+    print(counts_df.dtypes)
+    print(counts_df.dtypes.unique())
+    counts_df = counts_df.apply(pd.to_numeric, errors='raise')
+    print(counts_df.dtypes.unique())
     inference = DefaultInference(n_cpus=8)
     dds = DeseqDataSet(
         counts=counts_df,
