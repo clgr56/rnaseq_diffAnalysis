@@ -6,7 +6,7 @@ ref_anno_gtf="data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
 sjdbOverhang=149
 #add_read_group=["--outSAMattrRGline", RG, SM,]
 #overal config
-threads=16
+threads=24
 #feature_counts
 #['UC', 'GM', 'IR', 'all']
 mode=['Aza', 'GUA', 'Control', 'all']

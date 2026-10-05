@@ -13,14 +13,16 @@ def fastQC(file):
     print(len(f_list))
     for f in f_list:
         print(f)
-        subprocess.run(["fastqc", f, "--outdir", out_dir])
+        cmd = ["fastqc", f, "--outdir", out_dir]
+        subprocess.run(cmd, check=True)
 
 
 def multiQC(file):
     files_dir = f"results/{file}"
     out_dir = f"results/{file}multiqc"
     print("multiQC")
-    subprocess.run(["multiqc", files_dir, "--outdir", out_dir])
+    cmd = ["multiqc", files_dir, "--outdir", out_dir]
+    subprocess.run(cmd, check=True)
 
 
 def fastp(files):
@@ -41,7 +43,8 @@ def fastp(files):
         print(out_1)
         print(out_2)
         print(out_report)
-        subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", "16", "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json])
+        cmd = ["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", config.threads, "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json]
+        subprocess.run(cmd, check=True)
 
 
 def trim(files):
@@ -55,7 +58,8 @@ def trim(files):
         print(f)
         f2 = f[:-7]
         f2 = f2 + '2.fq.gz'
-        subprocess.run(["trim_galore", "--paired", f, f2, "-o", out_dir])
+        cmd = ["trim_galore", "--paired", f, f2, "-o", out_dir]
+        subprocess.run(cmd, check=True)
 
 
 def trimmed_fastqc(files):
@@ -68,23 +72,27 @@ def trimmed_fastqc(files):
     print(len(f_list))
     for f in f_list:
         print(f)
-        subprocess.run(["fastqc", f, "--outdir", out_dir])
+        cmd = ["fastqc", f, "--outdir", out_dir]
+        subprocess.run(cmd,check=True)
 
 
 def iso_quant(files):
     print("salmon indexing")
-    subprocess.run(["salmon", "index", "-p", "16", "-t", config.ref_transcript_file, "-i", f"results/{files}salmon/index"], check=True)#ref anpassen
+    cmd1 = ["salmon", "index", "-p", config.threads, "-t", config.ref_transcript_file, "-i", f"results/{files}salmon/index"]
+    subprocess.run(cmd1, check=True)#ref anpassen
     f_list = []
-    for fname in glob.glob(f'results/{files}trimmed/*1.fq.gz'):
+    for fname in glob.glob(f'results/{files}trimmed/*1_val_1.fq.gz'):
         f_list.append(fname)
     print("salmon quantification")
     for f in f_list:
         print(f)
         f2 = f[:-13]
         f2 = f2 + '2_val_2.fq.gz'
-        print(f2[36:-12])
-        f_base = f'results/{files}salmon/' +f2[36:-12] + '_trimmed'
-        subprocess.run(["salmon", "quant", "-p", "16", "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base], check=True)
+        print(f2)
+        f_base = f'results/{files}salmon/' +f2[:-11].split('/')[3] + 'trimmed'
+        print(f_base)
+        cmd2 = ["salmon", "quant", "-p", "16", "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base]
+        subprocess.run(cmd2, check=True)
         #--validateMapping depricated
 
 
@@ -94,7 +102,7 @@ def star_align_idx(files):
     for fname in glob.glob(f'results/{files}trimmed/*1.fq.gz'):
         f_list.append(fname)
     print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
-    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", "149", "--runThreadN", '16'], check=True)
+    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", "149", "--runThreadN", config.threads], check=True)
     #--sjdbOverhang max.length.read -1
 
 
@@ -103,7 +111,7 @@ def star_align(files):
     cmd = ['unpigz', f'results/{files}trimmed/*.fq.gz']
     subprocess.run(cmd,check=True)
     f_list = []
-    for fname in glob.glob(f'results/{files}trimmed/*1.fq'):#trying gz again
+    for fname in glob.glob(f'results/{files}trimmed/*1_val_1.fq'):#trying gz again
         f_list.append(fname)
     print("STAR align")
     for f in f_list:
@@ -111,13 +119,14 @@ def star_align(files):
         f2 = f[:-10] #12
         f2 = f2 + '2_val_2.fq'#.gz
         print(f2)
-        f_base = f'results/{files}star/' + f2[36:-11] + '_trimmed' #f2[13:-13]
-        RG = 'ID:' + f2[36:-11]
-        SM = 'SM:' + f2[36:-11]
+        f_base = f'results/{files}star/' + f2[:-10].split('/')[3] + 'trimmed' #f2[13:-13]
+        RG = 'ID:' + f2[:-11].split('/')[3]
+        SM = 'SM:' + f2[:-11].split('/')[3]
         print(RG)
         print(SM)
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
-        subprocess.run(["STAR", "--genomeDir", f"results/{files}star/index/", "--runThreadN", '16', "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--outSAMattrRGline", RG, SM, "--quantMode", "GeneCounts"],check=True) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
+        cmd = ["STAR", "--genomeDir", f"results/{files}star/index/", "--runThreadN", config.threads, "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--outSAMattrRGline", RG, SM, "--quantMode", "GeneCounts"]
+        subprocess.run(cmd, check=True) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
 
 
 def bam_bai(files):
@@ -141,7 +150,7 @@ def sam_depth(files):
     for f in f_list:
         out_f = f.split('/')[3]
         out = out_dir+out_f[:-4]+'.depth.txt'
-        cmd = ['samtools', 'depth', '-@', '16', f, '-o', out]
+        cmd = ['samtools', 'depth', '-@', config.threads, f, '-o', out]
         subprocess.run(cmd, check=True)
 
 
@@ -155,12 +164,12 @@ def sam_QC(files):
     for fil in f_list:
         out_f = fil.split('/')[3]
         out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
-        cmd = ['samtools', 'flagstats', '-@', '16', '-O', 'tsv', fil]#, '>', out_flagstat
+        cmd = ['samtools', 'flagstats', '-@', config.threads, '-O', 'tsv', fil]#, '>', out_flagstat
         with open(out_flagstat, "w",encoding="utf-8") as fi:
             subprocess.call(cmd,stdout=fi)
         #subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
-        cmd_stats = ['samtools', 'stats', '-@', '16', '--ref-seq', config.ref_gene_fasta, fil]#, '>', out_stats
+        cmd_stats = ['samtools', 'stats', '-@', config.threads, '--ref-seq', config.ref_gene_fasta, fil]#, '>', out_stats
         with open(out_stats,"w",encoding="utf-8") as f:
             subprocess.call(cmd_stats, stdout=f)
         #subprocess.run(cmd_stats, check=True)
@@ -182,7 +191,7 @@ def picard_markdup(files):
 
 def quant_mapper_gene(files):
     print("quant_mapper_gene")
-    mode = config.mode#['all']#'UC', 'GM', 'IR'
+    mode = config.mode
     for mod in mode:
         f_list = []
         if mod != 'all':
@@ -194,7 +203,7 @@ def quant_mapper_gene(files):
         string_list = f_list#" ".join(f_list)
         print(string_list)
         outfile = f'results/{files}feature_counts/counts_{mod}_feature.txt'
-        cmd = ['featureCounts', '-T', '16', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
+        cmd = ['featureCounts', '-T', config.threads, '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
@@ -216,7 +225,7 @@ def quant_mapper_gene_all(all):
     string_list = f_list#" ".join(f_list)
     print(string_list)
     outfile = 'results/feature_counts/counts_all_feature.txt'
-    cmd = ['featureCounts', '-T', '16', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
+    cmd = ['featureCounts', '-T', config.threads, '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
     cmd.extend(['-o', outfile])
     cmd.extend(string_list)
     subprocess.run(cmd, check=True)
