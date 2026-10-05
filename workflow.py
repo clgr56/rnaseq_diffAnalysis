@@ -38,6 +38,9 @@ def fastp(files):
         out_report = out_dir+f[:-7].split('/')[2]+"report"
         out_html = out_report+'.html'
         out_json = out_report+'.json'
+        print(out_1)
+        print(out_2)
+        print(out_report)
         subprocess.run(["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", "16", "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json])
 
 
@@ -70,7 +73,7 @@ def trimmed_fastqc(files):
 
 def iso_quant(files):
     print("salmon indexing")
-    subprocess.run(["salmon", "index", "-t", "data/ref/gencode.v50.transcripts.fa", "-i", f"results/{files}salmon/index"])
+    subprocess.run(["salmon", "index", "-p", "16", "-t", config.ref_transcript_file, "-i", f"results/{files}salmon/index"], check=True)#ref anpassen
     f_list = []
     for fname in glob.glob(f'results/{files}trimmed/*1.fq.gz'):
         f_list.append(fname)
@@ -81,7 +84,7 @@ def iso_quant(files):
         f2 = f2 + '2_val_2.fq.gz'
         print(f2[36:-12])
         f_base = f'results/{files}salmon/' +f2[36:-12] + '_trimmed'
-        subprocess.run(["salmon", "quant", "-i", "results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base])
+        subprocess.run(["salmon", "quant", "-p", "16", "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base], check=True)
         #--validateMapping depricated
 
 
@@ -91,12 +94,14 @@ def star_align_idx(files):
     for fname in glob.glob(f'results/{files}trimmed/*1.fq.gz'):
         f_list.append(fname)
     print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
-    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", "results/star/index/", "--genomeFastaFiles", "data/ref/GRCh38.p14.genome.fa", "--sjdbGTFfile", "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf", "--sjdbOverhang", "149", "--runThreadN", '16'], check=True)
+    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", "149", "--runThreadN", '16'], check=True)
     #--sjdbOverhang max.length.read -1
 
 
 def star_align(files):
     print("star_align")
+    cmd = ['unpigz', f'results/{files}trimmed/*.fq.gz']
+    subprocess.run(cmd,check=True)
     f_list = []
     for fname in glob.glob(f'results/{files}trimmed/*1.fq'):#trying gz again
         f_list.append(fname)
@@ -121,7 +126,7 @@ def bam_bai(files):
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for f in f_list:
-        cmd = ['samtools', 'index', '-M', '--bai', '--threads', '16'] #     Interpret all filename arguments as alignment files to be indexed individually
+        cmd = ['samtools', 'index', '-@', '16', '-M', '--bai'] #     Interpret all filename arguments as alignment files to be indexed individually
         cmd.append(f)
         subprocess.run(cmd, check=True)
 
@@ -136,7 +141,7 @@ def sam_depth(files):
     for f in f_list:
         out_f = f.split('/')[3]
         out = out_dir+out_f[:-4]+'.depth.txt'
-        cmd = ['samtools', 'depth', f, '-o', out]
+        cmd = ['samtools', 'depth', '-@', '16', f, '-o', out]
         subprocess.run(cmd, check=True)
 
 
@@ -144,7 +149,7 @@ def sam_depth(files):
 def sam_QC(files):
     print("sam_QC")
     f_list = []
-    out_dir = "results/sam/"
+    out_dir = f"results/{files}sam/"
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for fil in f_list:
@@ -155,7 +160,7 @@ def sam_QC(files):
             subprocess.call(cmd,stdout=fi)
         #subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
-        cmd_stats = ['samtools', 'stats', '--threads', '16', '--ref-seq', 'data/ref/GRCh38.p14.genome.fa', f]#, '>', out_stats
+        cmd_stats = ['samtools', 'stats', '-@', '16', '--ref-seq', config.ref_gene_fasta, fil]#, '>', out_stats
         with open(out_stats,"w",encoding="utf-8") as f:
             subprocess.call(cmd_stats, stdout=f)
         #subprocess.run(cmd_stats, check=True)
@@ -189,16 +194,16 @@ def quant_mapper_gene(files):
         string_list = f_list#" ".join(f_list)
         print(string_list)
         outfile = f'results/{files}feature_counts/counts_{mod}_feature.txt'
-        cmd = ['featureCounts', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', 'data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf']
+        cmd = ['featureCounts', '-T', '16', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
         #--countReadPairs for counting features; -M for countMultiMappingReads: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count)
         #-p paired-end;
         outfile2 = f'results/{files}feature_counts/counts_{mod}_reads.txt'
-        del cmd[2]
-        del cmd[10]
-        cmd.insert(10,outfile2)
+        del cmd[4]
+        del cmd[12]
+        cmd.insert(12,outfile2)
         subprocess.run(cmd, check=True)
 
 
@@ -211,16 +216,16 @@ def quant_mapper_gene_all(all):
     string_list = f_list#" ".join(f_list)
     print(string_list)
     outfile = 'results/feature_counts/counts_all_feature.txt'
-    cmd = ['featureCounts', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', 'data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf']
+    cmd = ['featureCounts', '-T', '16', '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
     cmd.extend(['-o', outfile])
     cmd.extend(string_list)
     subprocess.run(cmd, check=True)
     #--countReadPairs for counting features; -M for countMultiMappingReads: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count)
     #-p paired-end;
     outfile2 = 'results/feature_counts/counts_all_reads.txt'
-    del cmd[2]
-    del cmd[10]
-    cmd.insert(10,outfile2)
+    del cmd[4]
+    del cmd[12]
+    cmd.insert(12,outfile2)
     subprocess.run(cmd, check=True)
 
 
@@ -238,20 +243,21 @@ def drimseq():
 
 
 if __name__=="__main__":
-    for file in config.data_folder:
-        fastQC(file)
-        fastp(file)
-        trimmed_fastqc(file)
-        multiQC(file)
-        trim(file)
-        iso_quant(file)
-        star_align_idx(file)
-        star_align(file)
-        bam_bai(file)
-        sam_depth(file)
-        sam_QC(file)
-        picard_markdup(file)
-        quant_mapper_gene(file)
-    quant_mapper_gene_all(config.data_folder)
+    #for file in config.data_folder:
+    file = config.data_folder
+    fastQC(file)
+    fastp(file)
+    trimmed_fastqc(file)
+    #multiQC(file)
+    trim(file)
+    iso_quant(file)
+    star_align_idx(file)
+    star_align(file)
+    bam_bai(file)
+    sam_depth(file)
+    sam_QC(file)
+    picard_markdup(file)
+    quant_mapper_gene(file)
+    #quant_mapper_gene_all(config.data_folder)
     deseq2()
-    #multiQC()
+    multiQC(file)

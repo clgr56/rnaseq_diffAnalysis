@@ -19,9 +19,9 @@ def read_in():
     #write file for names, condition, time, batch
     print(in_deseq2)
     condition=['carcinoma','healthy']#config
-    sample_names = [re.split(r"[/\s.]+",x)[2] for x in in_deseq2.index]
+    sample_names = [f"30_{re.split(r'[/\s.]+',x)[3]}" if "30" in re.split(r'[/\s.]+',x)[1] else f"15_{re.split(r'[/\s.]+',x)[3]}" for x in in_deseq2.index]
     in_deseq2.index = sample_names
-    metadata = pd.DataFrame({'condition':condition}, index=sample_names)#config
+    metadata = pd.DataFrame({'condition':condition}, index=sample_names)#config 'seq_batch':seq_batch
     print(metadata)
     met = metadata
     i_d = in_deseq2.loc[in_deseq2.index.isin(met.index)]
@@ -110,9 +110,68 @@ def show_res(dds, ds, metadata):
     print(re_sig)
 
 
+def volcano_plot(ds, output_path="results/volcano_condtion.png",padj_cutoff=0.05, lfc_cutoff=1):
+    res = ds.results_df.copy()
+    # Remove rows without statistics
+    res = res.replace([np.inf, -np.inf], np.nan)
+    res = res.dropna(subset=["log2FoldChange", "padj"])
+    # -log10 adjusted p-value
+    res["neg_log10_padj"] = -np.log10(res["padj"].clip(lower=np.finfo(float).tiny))
+    # Significance categories
+    res["significance"] = "Not significant"
+    res.loc[(res["padj"] < padj_cutoff) & (res["log2FoldChange"] > lfc_cutoff),"significance"] = "Higher in A3"
+    res.loc[(res["padj"] < padj_cutoff) & (res["log2FoldChange"] < -lfc_cutoff),"significance"] = "Higher in K3"
+
+    # Plot
+    plt.figure(figsize=(9, 7))
+
+    for category in ["Not significant", "Higher in A3", "Higher in K3"]:
+        subset = res[res["significance"] == category]
+        plt.scatter(
+            subset["log2FoldChange"],
+            subset["neg_log10_padj"],
+            s=12,
+            alpha=0.6,
+            label=category
+        )
+
+    # Cutoff lines
+    plt.axhline(
+        -np.log10(padj_cutoff),
+        linestyle="--",
+        linewidth=1
+    )
+
+    plt.axvline(
+        lfc_cutoff,
+        linestyle="--",
+        linewidth=1
+    )
+
+    plt.axvline(
+        -lfc_cutoff,
+        linestyle="--",
+        linewidth=1
+    )
+
+    plt.xlabel("log2 fold change (A3 vs K3)")
+    plt.ylabel("-log10 adjusted p-value")
+    plt.title("DESeq2: A3 vs K3 sequencing model")
+
+    plt.legend()
+    plt.tight_layout()
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+
+    print(f"Volcano plot saved to: {output_path}")
+
+
 if __name__=='__main__':
     #save(False)
     data_in, meta = read_in()
     dds = deseq2(data_in, meta)
     ds = stats(dds)
     show_res(dds, ds, meta)
+    volcano_plot(ds)
