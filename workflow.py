@@ -35,9 +35,9 @@ def fastp(files):
         print(f)
         f2 = f[:-7]
         f2 = f2 + '2.fq.gz'
-        out_1 = out_dir+f[:-7].split('/')[2]+"1_trimmed.fq.gz"
-        out_2 = out_dir+f[:-7].split('/')[2]+"2_trimmed.fq.gz"
-        out_report = out_dir+f[:-7].split('/')[2]+"report"
+        out_1 = out_dir+f[:-7].split('/')[-1]+"1_trimmed.fq.gz"
+        out_2 = out_dir+f[:-7].split('/')[-1]+"2_trimmed.fq.gz"
+        out_report = out_dir+f[:-7].split('/')[-1]+"report"
         out_html = out_report+'.html'
         out_json = out_report+'.json'
         print(out_1)
@@ -89,7 +89,7 @@ def iso_quant(files):
         f2 = f[:-13]
         f2 = f2 + '2_val_2.fq.gz'
         print(f2)
-        f_base = f'results/{files}salmon/' +f2[:-11].split('/')[3] + 'trimmed'
+        f_base = f'results/{files}salmon/' +f2[:-11].split('/')[-1] + 'trimmed'
         print(f_base)
         cmd2 = ["salmon", "quant", "-p", "16", "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base]
         subprocess.run(cmd2, check=True)
@@ -102,14 +102,14 @@ def star_align_idx(files):
     for fname in glob.glob(f'results/{files}trimmed/*1.fq.gz'):
         f_list.append(fname)
     print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
-    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", "149", "--runThreadN", config.threads], check=True)
+    subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", config.sjdbOverhang, "--runThreadN", config.threads], check=True)
     #--sjdbOverhang max.length.read -1
 
 
 def star_align(files):
     print("star_align")
-    cmd = ['unpigz', f'results/{files}trimmed/*.fq.gz']
-    subprocess.run(cmd,check=True)
+    #cmd = ['unpigz', f'results/{files}trimmed/*.fq.gz']
+    #subprocess.run(cmd,check=True)
     f_list = []
     for fname in glob.glob(f'results/{files}trimmed/*1_val_1.fq'):#trying gz again
         f_list.append(fname)
@@ -119,9 +119,9 @@ def star_align(files):
         f2 = f[:-10] #12
         f2 = f2 + '2_val_2.fq'#.gz
         print(f2)
-        f_base = f'results/{files}star/' + f2[:-10].split('/')[3] + 'trimmed' #f2[13:-13]
-        RG = 'ID:' + f2[:-11].split('/')[3]
-        SM = 'SM:' + f2[:-11].split('/')[3]
+        f_base = f'results/{files}star/' + f2[:-10].split('/')[-1] + 'trimmed' #f2[13:-13]
+        RG = 'ID:' + f2[:-11].split('/')[-1]
+        SM = 'SM:' + f2[:-11].split('/')[-1]
         print(RG)
         print(SM)
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
@@ -148,7 +148,7 @@ def sam_depth(files):
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for f in f_list:
-        out_f = f.split('/')[3]
+        out_f = f.split('/')[-1]
         out = out_dir+out_f[:-4]+'.depth.txt'
         cmd = ['samtools', 'depth', '-@', config.threads, f, '-o', out]
         subprocess.run(cmd, check=True)
@@ -162,7 +162,7 @@ def sam_QC(files):
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for fil in f_list:
-        out_f = fil.split('/')[3]
+        out_f = fil.split('/')[-1]
         out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
         cmd = ['samtools', 'flagstats', '-@', config.threads, '-O', 'tsv', fil]#, '>', out_flagstat
         with open(out_flagstat, "w",encoding="utf-8") as fi:
@@ -182,7 +182,7 @@ def picard_markdup(files):
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for f in f_list:
-        out_f = f.split('/')[3]
+        out_f = f.split('/')[-1]
         out = out_dir+out_f[:-4]+".markdup.bam"
         out_metrics = out_dir+out_f[:-4]+".metrics.txt"
         cmd = ['picard', 'MarkDuplicates', '--INPUT', f, '--OUTPUT', out, '--METRICS_FILE', out_metrics]
@@ -216,10 +216,10 @@ def quant_mapper_gene(files):
         subprocess.run(cmd, check=True)
 
 
-def quant_mapper_gene_all(all):
+def quant_mapper_gene_all(complete):
     print("quant_mapper_gene_all")
     f_list = []
-    for l in all:
+    for l in complete:
         for fname in glob.glob(f'results/{l}star/*.bam'):
             f_list.append(fname)
     string_list = f_list#" ".join(f_list)
@@ -253,20 +253,20 @@ def drimseq():
 
 if __name__=="__main__":
     #for file in config.data_folder:
-    file = config.data_folder
-    fastQC(file)
-    fastp(file)
-    trimmed_fastqc(file)
-    #multiQC(file)
-    trim(file)
-    iso_quant(file)
-    star_align_idx(file)
-    star_align(file)
-    bam_bai(file)
-    sam_depth(file)
-    sam_QC(file)
-    picard_markdup(file)
-    quant_mapper_gene(file)
+    FILE = config.data_folder
+    fastQC(FILE)
+    fastp(FILE)
+    trimmed_fastqc(FILE)
+    #multiQC(FILE)
+    trim(FILE)
+    iso_quant(FILE)
+    star_align_idx(FILE)
+    star_align(FILE)
+    bam_bai(FILE)
+    sam_depth(FILE)
+    sam_QC(FILE)
+    picard_markdup(FILE)
+    quant_mapper_gene(FILE)
     #quant_mapper_gene_all(config.data_folder)
     deseq2()
-    multiQC(file)
+    multiQC(FILE)
