@@ -97,10 +97,6 @@ def iso_quant(files):
 
 
 def star_align_idx(files):
-    print("star_align_idx")
-    f_list = []
-    for fname in glob.glob(f'results/{files}trimmed/*1.fq.gz'):
-        f_list.append(fname)
     print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
     subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", config.sjdbOverhang, "--runThreadN", config.threads], check=True)
     #--sjdbOverhang max.length.read -1
@@ -254,13 +250,13 @@ def drimseq():
 if __name__=="__main__":
     #for file in config.data_folder:
     FILE = config.data_folder
-    fastQC(FILE)
-    fastp(FILE)
-    trimmed_fastqc(FILE)
+    #fastQC(FILE)
+    #fastp(FILE)
+    #trimmed_fastqc(FILE)
     #multiQC(FILE)
-    trim(FILE)
-    iso_quant(FILE)
-    star_align_idx(FILE)
+    #trim(FILE)
+    #iso_quant(FILE)
+    #star_align_idx(FILE)
     star_align(FILE)
     bam_bai(FILE)
     sam_depth(FILE)
