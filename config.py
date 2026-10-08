@@ -3,13 +3,13 @@ ref_transcript_file="data/ref/gencode.v50.transcripts.fa"
 ref_gene_fasta="data/ref/GRCh38.p14.genome.fa"
 ref_anno_gtf="data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
 #star_align: max(length)-1
-sjdbOverhang=149
+sjdbOverhang='149'
 #add_read_group=["--outSAMattrRGline", RG, SM,]
 #overal config
-threads=24
+threads='36'
 #feature_counts
 #['UC', 'GM', 'IR', 'all']
-mode=['Aza', 'GUA', 'Control', 'all']
+mode=['Aza', 'Gua', 'Control', 'all']
 #deseq
 #SLR24
 

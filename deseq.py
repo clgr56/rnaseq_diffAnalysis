@@ -101,7 +101,7 @@ def show_res(dds, comp, ds, metadata):
     plt.xlabel(f"PC1 ({pca_model.explained_variance_ratio_[0]*100:.1f}%)")
     plt.ylabel(f"PC2 ({pca_model.explained_variance_ratio_[1]*100:.1f}%)")
     plt.title("VST-PCA by condition")
-    plt.savefig(f'results/{config.data_folder}deseq2/VST_PCA_{comp[2]}_{comp[3]}.png',format='png')
+    plt.savefig(f'results/{config.data_folder}deseq2/VST_PCA_{comp[1]}_{comp[2]}.png',format='png')
 
     print(ds.p_values)
     print(ds.padj)
@@ -112,7 +112,7 @@ def show_res(dds, comp, ds, metadata):
 
 
 def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
-    output_path = f"results/{config.data_folder}deseq2/volcano_plot_{comp[2]}_{comp[3]}.png"
+    output_path = f"results/{config.data_folder}deseq2/volcano_plot_{comp[1]}_{comp[2]}.png"
     res = ds.results_df.copy()
     # Remove invalid values
     res = res.replace([np.inf, -np.inf], np.nan)
@@ -124,13 +124,13 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
     res["significance"] = "Not significant"
     up = (res["padj"] < padj_cutoff) & (res["log2FoldChange"] >= lfc_cutoff)
     down = (res["padj"] < padj_cutoff) & (res["log2FoldChange"] <= -lfc_cutoff)
-    res.loc[up,"significance"] = f"Higher in {comp[2]}"
-    res.loc[down,"significance"] = f"Higher in {comp[3]}"
+    res.loc[up,"significance"] = f"Higher in {comp[1]}"
+    res.loc[down,"significance"] = f"Higher in {comp[2]}"
 
     # Plot
     plt.figure(figsize=(9, 7))
 
-    categories = ["Not significant", f"Higher in {comp[2]}", f"Higher in {comp[3]}"]
+    categories = ["Not significant", f"Higher in {comp[1]}", f"Higher in {comp[2]}"]
 
     for category in categories:
         subset = res[res["significance"] == category]
@@ -174,9 +174,9 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
                      fontsize=8
                      )
 
-    plt.xlabel(f"log2 fold change ({comp[2]} vs {comp[3]})")
+    plt.xlabel(f"log2 fold change ({comp[1]} vs {comp[2]})")
     plt.ylabel("-log10 adjusted p-value")
-    plt.title(f"DESeq2: {comp[2]} vs {comp[3]} sequencing model")
+    plt.title(f"DESeq2: {comp[1]} vs {comp[2]} sequencing model")
     plt.legend()
     plt.tight_layout()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -184,7 +184,7 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
     plt.close()
 
     #stats
-    print(f"\n{comp[2]} + {comp[3]}")
+    print(f"\n{comp[1]} + {comp[2]}")
     print("significatn up:", up.sum())
     print("signifikant down:", down.sum())
     print("Total significants:", (up | down).sum())
@@ -192,7 +192,7 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
 
 
 def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
-    output_path = f"results/{config.data_folder}deseq2/MA_{comp[2]}_{comp[3]}.png"
+    output_path = f"results/{config.data_folder}deseq2/MA_{comp[1]}_{comp[2]}.png"
     res = ds.results_df.copy()
     res = res.replace([np.inf, -np.inf], np.nan)
     res = res.dropna(subset=["log2FoldChange", "baseMean", "padj"])
@@ -229,8 +229,8 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
     plt.axhline(-lfc_cutoff, linestyle="--", linewidth=1)
 
     plt.xlabel("log2(baseMean + 1)")
-    plt.ylabel(f"log2 fold change ({comp[2]} vs {comp[3]})")
-    plt.title(f"DESeq2 MA plot: {comp[2]} vs {comp[3]}")
+    plt.ylabel(f"log2 fold change ({comp[1]} vs {comp[2]})")
+    plt.title(f"DESeq2 MA plot: {comp[1]} vs {comp[2]}")
     plt.legend()
     plt.tight_layout()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -247,7 +247,7 @@ def heatmap_significant_genes(
     padj_cutoff=0.05,
     lfc_cutoff=1.0,
     top_n=100):
-    output_path = f"results/{config.data_folder}deseq2/heatmap_{comp[2]}_{comp[3].png}"
+    output_path = f"results/{config.data_folder}deseq2/heatmap_{comp[1]}_{comp[2].png}"
     # ------------------------------------------------
     # Get significant DESeq2 genes
     # ------------------------------------------------
@@ -275,7 +275,7 @@ def heatmap_significant_genes(
 
         print(
             f"No significant genes for "
-            f"{comp[2]} vs {comp[3]}"
+            f"{comp[1]} vs {comp[2]}"
         )
 
         return
@@ -293,7 +293,7 @@ def heatmap_significant_genes(
     genes = significant.index.tolist()
 
     print(
-        f"Heatmap {comp[2]} vs {comp[3]}: "
+        f"Heatmap {comp[1]} vs {comp[2]}: "
         f"{len(genes)} genes"
     )
 
@@ -397,7 +397,7 @@ def heatmap_significant_genes(
 
     plt.title(
         f"Significant genes: "
-        f"{comp[2]} vs {comp[3]}"
+        f"{comp[1]} vs {comp[2]}"
     )
 
     plt.tight_layout()

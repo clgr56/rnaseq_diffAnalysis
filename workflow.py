@@ -121,7 +121,7 @@ def star_align(files):
         print(RG)
         print(SM)
         print(f_base) #possible sam outout: --outSAMaatributes NH HI AS nM NM MD jM jI MC ch uT and possible unstranded option for cufflinks/cuffdiff: --outSAMstrandField intronMotif  if cufflinks you should remove non-canonical junctions with --outFilterIntronMotifs RemoveNoncanonical
-        cmd = ["STAR", "--genomeDir", f"results/{files}star/index/", "--runThreadN", config.threads, "--readFilesIn", f, f2, "--outFileNamePrefix", f_base, "--outSAMtype", "BAM", "SortedByCoordinate", "--outSAMunmapped", "Within", "--outSAMattributes", "All", "--outSAMattrRGline", RG, SM, "--quantMode", "GeneCounts"]
+        cmd = ['STAR', '--genomeDir', f'results/{files}star/index/', '--runThreadN', config.threads, '--readFilesIn', f, f2, '--outFileNamePrefix', f_base, '--outSAMtype', 'BAM', 'SortedByCoordinate', '--outSAMunmapped', 'Within', '--outSAMattributes', 'All', '--outSAMattrRGline', RG, SM, '--quantMode', 'GeneCounts']
         subprocess.run(cmd, check=True) #'--readFIlesCommand', 'gunzip', '-c',   '--readFilesCommand', 'gunzip', '-c', outSamattributes Standard
 
 
@@ -131,7 +131,7 @@ def bam_bai(files):
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for f in f_list:
-        cmd = ['samtools', 'index', '-@', '16', '-M', '--bai'] #     Interpret all filename arguments as alignment files to be indexed individually
+        cmd = ['samtools', 'index', '-@', config.threads, '-M', '--bai'] #     Interpret all filename arguments as alignment files to be indexed individually
         cmd.append(f)
         subprocess.run(cmd, check=True)
 
@@ -203,7 +203,7 @@ def quant_mapper_gene(files):
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
-        #--countReadPairs for counting features; -M for countMultiMappingReads: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count)
+        #--countReadPairs for counting features; -M for countMultiMappingReads: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count) -> vllt weglassen
         #-p paired-end;
         outfile2 = f'results/{files}feature_counts/counts_{mod}_reads.txt'
         del cmd[4]
@@ -235,12 +235,12 @@ def quant_mapper_gene_all(complete):
 
 
 def deseq2():
-    cmd = ['conda', 'activate', 'pydeseq2']
-    subprocess.run(cmd,check=True)
+    #cmd = ['conda', 'activate', 'pydeseq2']
+    #subprocess.run(cmd,check=True)
     cmd = ['python3', 'deseq.py']
     subprocess.run(cmd,check=True)
-    cmd = ['conda', 'deactivate', 'pydeseq2']
-    subprocess.run(cmd,check=True)
+    #cmd = ['conda', 'deactivate', 'pydeseq2']
+    #subprocess.run(cmd,check=True)
 
 
 def drimseq():
@@ -250,19 +250,19 @@ def drimseq():
 if __name__=="__main__":
     #for file in config.data_folder:
     FILE = config.data_folder
-    #fastQC(FILE)
-    #fastp(FILE)
-    #trimmed_fastqc(FILE)
-    #multiQC(FILE)
-    #trim(FILE)
-    #iso_quant(FILE)
-    #star_align_idx(FILE)
+    fastQC(FILE)
+    fastp(FILE)
+    trimmed_fastqc(FILE)
+    multiQC(FILE)
+    trim(FILE)
+    iso_quant(FILE)
+    star_align_idx(FILE)
     star_align(FILE)
     bam_bai(FILE)
     sam_depth(FILE)
     sam_QC(FILE)
     picard_markdup(FILE)
     quant_mapper_gene(FILE)
-    #quant_mapper_gene_all(config.data_folder)
+    quant_mapper_gene_all(config.data_folder)
     deseq2()
     multiQC(FILE)
