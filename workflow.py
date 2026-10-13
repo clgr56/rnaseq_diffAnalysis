@@ -159,8 +159,8 @@ def sam_QC(files):
         f_list.append(fname)
     for fil in f_list:
         out_f = fil.split('/')[-1]
-        out_flagstat = out_dir+out_f[:-4]+'.flagstats.tsv'
-        cmd = ['samtools', 'flagstats', '-@', config.threads, '-O', 'tsv', fil]#, '>', out_flagstat
+        out_flagstat = out_dir+out_f[:-4]+'.flagstat.tsv'
+        cmd = ['samtools', 'flagstat', '-@', config.threads, '-O', 'tsv', fil]#, '>', out_flagstat
         with open(out_flagstat, "w",encoding="utf-8") as fi:
             subprocess.call(cmd,stdout=fi)
         #subprocess.run(cmd, check=True)

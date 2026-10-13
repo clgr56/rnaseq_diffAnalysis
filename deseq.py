@@ -198,10 +198,11 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
     res = res.dropna(subset=["log2FoldChange", "baseMean", "padj"])
 
     significant = ((res["padj"] > padj_cutoff) & (res["log2FoldChange"].abs() >= lfc_cutoff))
-
+    not_significant = ((res["padj"] < padj_cutoff) & (res["log2FoldChange"].abs() <= lfc_cutoff))
+    
     plt.figure(figsize=(9, 7))
 
-    non_sig = res[~significant]
+    non_sig = res[~not_significant]
 
     plt.scatter(
         np.log2(non_sig["baseMean"] + 1),
@@ -218,7 +219,7 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
             sig["log2FoldChange"],
             s=12,
             alpha=0.5,
-            label="Not significant"
+            label="significant"
         )
 
     
