@@ -93,7 +93,7 @@ def iso_quant(files):
         print(f_base)
         cmd2 = ["salmon", "quant", "-p", "16", "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--validateMappings", "-o", f_base]
         subprocess.run(cmd2, check=True)
-        #--validateMapping depricated
+        #--validateMapping depricated, maybe --gcBias flag (DeSeq2 Vignette)
 
 
 def star_align_idx(files):
@@ -264,5 +264,5 @@ if __name__=="__main__":
     picard_markdup(FILE)
     quant_mapper_gene(FILE)
     quant_mapper_gene_all(config.data_folder)
-    deseq2()
+    #deseq2()
     multiQC(FILE)

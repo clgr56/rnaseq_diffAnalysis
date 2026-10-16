@@ -3,8 +3,12 @@ import re
 import config
 import pandas as pd
 import numpy as np
+from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from scipy.spatial.distance import pdist, squareform
+from scipy.cluster.hierarchy import linkage
+import seaborn as sns
 
 from pydeseq2.dds import DeseqDataSet
 from pydeseq2.default_inference import DefaultInference
@@ -13,8 +17,9 @@ from pydeseq2.ds import DeseqStats
 
 
 def read_in():
-    DATA_PATH = f"results/{config.data_folder}feature_counts/"
-    counts_df = pd.read_csv(os.path.join(DATA_PATH, "counts_all_feature.txt"), skiprows=1, sep='\t', index_col=0)#config with counts_{mod}_{reads_feature}
+    data_path = f"results/{config.data_folder}feature_counts/"
+    counts_df = pd.read_csv(os.path.join(data_path, "counts_all_feature.txt"), skiprows=1, sep='\t', index_col=0)#config with counts_{mod}_{reads_feature}
+    print(counts_df.iloc[:,:12].T)
     in_de = counts_df.iloc[:,-12:].T
     in_deseq2 = in_de.filter(regex='^results', axis=0)
     #write file for names, condition, time, batch
@@ -24,17 +29,20 @@ def read_in():
     metadata = pd.DataFrame(index=sample_names)#config 'seq_batch':seq_batch
     metadata['condition'] = sum(metadata.index.str.extract(r"^(Aza|Gua|Control)").values.tolist(),[])
     print(metadata)
-    met = metadata
+    met = metadata.sort_index()
     i_d = in_deseq2.loc[in_deseq2.index.isin(met.index)]
+    i_d = i_d.loc[met.index]
     print(met)
     print(i_d)
     return i_d, met
 
 
-def save(SAVE):
-    if SAVE:
-        OUTPUT_PATH = f"results/{config.data_folder}deseq2/"
-        os.makedirs(OUTPUT_PATH, exist_ok=True)
+def save(res):
+    OUTPUT_PATH = f"results/{config.data_folder}deseq2/"
+    os.makedirs(OUTPUT_PATH, exist_ok=True)
+    res_df = pd.DataFrame(res)
+    print(res_df.head())
+    res_df.to_csv(OUTPUT_PATH, sep='\t')
 
 
 def deseq2(data_in, metadata):
@@ -95,7 +103,7 @@ def show_res(dds, comp, ds, metadata):
     print(f"Singular values: {pca_model.singular_values_}")
     # Plot, color by condition, w/o batch norm
     cond = metadata["condition"].values
-    plt.scatter(pca[:, 0], pca[:, 1], c=(cond == cond[0]))
+    plt.scatter(pca[:, 0], pca[:, 1], c= cond == cond[0])
     for i, sid in enumerate(metadata.index):
         plt.text(pca[i, 0], pca[i, 1], sid, fontsize=8)
     plt.xlabel(f"PC1 ({pca_model.explained_variance_ratio_[0]*100:.1f}%)")
@@ -163,7 +171,7 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
 
     # Label top genes
     top_genes = (res[res['padj']< padj_cutoff].sort_values('padj').head(label_top))
-    for gene, row in top_genes.iterrowas():
+    for gene, row in top_genes.iterrows():
         plt.annotate(str(gene),
                      (
                          row["log2FoldChange"],
@@ -197,12 +205,11 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
     res = res.replace([np.inf, -np.inf], np.nan)
     res = res.dropna(subset=["log2FoldChange", "baseMean", "padj"])
 
-    significant = ((res["padj"] > padj_cutoff) & (res["log2FoldChange"].abs() >= lfc_cutoff))
-    not_significant = ((res["padj"] < padj_cutoff) & (res["log2FoldChange"].abs() <= lfc_cutoff))
-    
-    plt.figure(figsize=(9, 7))
+    significant = ((res["padj"] < padj_cutoff) & (res["log2FoldChange"].abs() >= lfc_cutoff))
+    non_sig = res[~significant]
+    sig = res[significant]
 
-    non_sig = res[~not_significant]
+    plt.figure(figsize=(9, 7))
 
     plt.scatter(
         np.log2(non_sig["baseMean"] + 1),
@@ -211,9 +218,6 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
         alpha=0.5,
         label="Not significant"
     )
-
-    sig = res[~significant]
-
     plt.scatter(
             np.log2(sig["baseMean"] + 1),
             sig["log2FoldChange"],
@@ -222,7 +226,6 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
             label="significant"
         )
 
-    
     #zero-line
     plt.axhline(0, linestyle="--", linewidth=1)
     #LFC threshold
@@ -234,82 +237,24 @@ def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
     plt.title(f"DESeq2 MA plot: {comp[1]} vs {comp[2]}")
     plt.legend()
     plt.tight_layout()
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"MA plot: {significant.sum()} significant genes")
 
 
-def heatmap_significant_genes(
-    dds,
-    ds,
-    metadata,
-    comp,
-    padj_cutoff=0.05,
-    lfc_cutoff=1.0,
-    top_n=100):
-    output_path = f"results/{config.data_folder}deseq2/heatmap_{comp[1]}_{comp[2].png}"
-    # ------------------------------------------------
-    # Get significant DESeq2 genes
-    # ------------------------------------------------
+def ma_plot_pds(ds,comp):
+    output_path = f"results/{config.data_folder}deseq2/MA_pds_{comp[1]}_{comp[2]}.png"
+    ds.plot_MA(log=True, save_path=output_path, s=15)
+    print(f"MA_pds plot saved to: {output_path}")
 
-    res = ds.results_df.copy()
 
-    res = res.replace(
-        [np.inf, -np.inf],
-        np.nan
-    )
-
-    res = res.dropna(
-        subset=[
-            "log2FoldChange",
-            "padj"
-        ]
-    )
-
-    significant = res[
-        (res["padj"] < padj_cutoff) &
-        (res["log2FoldChange"].abs() >= lfc_cutoff)
-    ].copy()
-
-    if significant.empty:
-
-        print(
-            f"No significant genes for "
-            f"{comp[1]} vs {comp[2]}"
-        )
-
-        return
-
-    # Sort by adjusted p-value
-    significant = significant.sort_values(
-        "padj"
-    )
-
-    # Limit number of genes
-    if top_n is not None:
-
-        significant = significant.head(top_n)
-
-    genes = significant.index.tolist()
-
-    print(
-        f"Heatmap {comp[1]} vs {comp[2]}: "
-        f"{len(genes)} genes"
-    )
-
-    # ------------------------------------------------
-    # VST transformation
-    # ------------------------------------------------
-
-    # Only calculate VST if not already available
+def dist_heatmap(dds, metadata):
+    output_path = f"results/{config.data_folder}deseq2/dist_heatmap.png"
+# Only calculate VST if not already available
     if "vst_counts" not in dds.layers:
-
+        print("calculating VST")
         dds.vst()
-
-    vst = np.asarray(
-        dds.layers["vst_counts"]
-    )
+    vst = np.asarray(dds.layers["vst_counts"])
 
     # PyDESeq2 stores:
     # rows    = samples
@@ -321,100 +266,260 @@ def heatmap_significant_genes(
         columns=dds.var_names
     )
 
+    sample_metadata = metadata.loc[vst_df.index]
+
+    samp_dist = pdist(vst_df.to_numpy(), metric="euclidean")
+    samp_dist_matrix = squareform(samp_dist)
+
+    sample_labels = [
+        f"{sample_metadata.loc[s, "condition"]}-{s}"
+        for s in vst_df.index
+    ]
+
+    samp_dist_df = pd.DataFrame(
+        samp_dist_matrix,
+        index=sample_labels,
+        columns=sample_labels
+    )
+
+    hc = linkage(samp_dist, method="complete")
+
+    grid = sns.clustermap(
+        samp_dist_df,
+        row_linkage=hc,
+        col_linkage=hc,
+        cmap="Blues",
+        figsize=(10, 10),
+        linewidths=0.3,
+        dendrogram_ratio=(0.15, 0.15),
+        cbar_kws={"label": "Euclidean distance"}
+    )
+
+    grid.ax_heatmap.set_title(
+        "Heatmap of sample-to-sample distances",
+        pad=15,
+    )
+
+    grid.fig.savefig(
+        output_path,
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(grid.fig)
+
+    print(f"Sample distance heatmap saved: {output_path}")
+
+
+def heatmap_significant_genes(
+    dds,
+    ds,
+    metadata,
+    comp,
+    padj_cutoff=0.05,
+    lfc_cutoff=1.0,
+    top_n=100,
+    linkage_method="complete",
+    distance_metric="euclidean"):
+    output_path = f"results/{config.data_folder}deseq2/heatmap_{comp[1]}_{comp[2]}.png"
+    # ------------------------------------------------
+    # Get significant DESeq2 genes
+    # ------------------------------------------------
+
+    res = ds.results_df.copy()
+    res = res.replace([np.inf, -np.inf], np.nan)
+    res = res.dropna(subset=["log2FoldChange", "padj"])
+
+    significant = res.loc[(res["padj"] < padj_cutoff) & (res["log2FoldChange"].abs() >= lfc_cutoff)].sort_values("padj")
+    genes = significant.index.tolist()
+    print(
+        f"Heatmap {comp[1]} vs {comp[2]}: "
+        f"{len(genes)} genes"
+    )
+
+    if top_n is not None:
+        significant = significant.head(top_n)
+    if significant.empty:
+        print(f"No significant genes for {comp[1]} vs {comp[2]}")
+        return
+
+    # ------------------------------------------------
+    # VST transformation
+    # ------------------------------------------------
+
+    # Only calculate VST if not already available
+    if "vst_counts" not in dds.layers:
+        print("calculating VST")
+        dds.vst()
+
+    # PyDESeq2 stores:
+    # rows    = samples
+    # columns = genes
+
+    vst_df = pd.DataFrame(
+        vst = np.asarray(dds.layers["vst_counts"]),
+        index=dds.obs_names,
+        columns=dds.var_names
+    )
+
+    # 3. Align metadata and select genes
+    # Preserve the order of samples in the PyDESeq2 object.
+    missing_samples = vst_df.index.difference(metadata.index)
+    if len(missing_samples):
+        raise ValueError(
+            f"Samples missing from metadata: {missing_samples.tolist()}"
+        )
+
+    sample_metadata = metadata.loc[vst_df.index].copy()
+
+    genes = [
+        gene for gene in significant.index
+        if gene in vst_df.columns
+    ]
+
+    if not genes:
+        print(
+            "No significant result gene IDs match the VST matrix. "
+            "Check that both use the same gene identifiers."
+        )
+        return
     # ------------------------------------------------
     # Select significant genes
     # ------------------------------------------------
 
-    heatmap_data = vst_df.loc[
-        metadata.index,
-        genes
-    ]
+    heatmap_data = vst_df.loc[:, genes].copy()
 
     # ------------------------------------------------
     # Z-score each gene
     # ------------------------------------------------
 
+    # 4. Z-score each gene across samples
+    gene_means = heatmap_data.mean(axis=0)
+    gene_stds = heatmap_data.std(axis=0, ddof=1)
+
+    # Exclude constant or invalid genes before clustering
+    valid_genes = gene_stds[
+        np.isfinite(gene_stds) & (gene_stds > 0)
+    ].index
+
+    heatmap_data = heatmap_data.loc[:, valid_genes]
+
+    if heatmap_data.empty:
+        print("No variable genes remain for the heatmap.")
+        return
+
+    if heatmap_data.empty:
+        print("No variable genes remain for the heatmap.")
+        return
+
     heatmap_z = (
-        heatmap_data
-        .sub(heatmap_data.mean(axis=0), axis=1)
-        .div(heatmap_data.std(axis=0), axis=1)
-    )
+        heatmap_data - gene_means.loc[valid_genes]
+    ) / gene_stds.loc[valid_genes]
 
-    # Remove genes with zero variance
-    heatmap_z = heatmap_z.dropna(
-        axis=1
-    )
-
-    # ------------------------------------------------
-    # Transpose:
-    # genes x samples
-    # ------------------------------------------------
-
+    # Transpose: genes = rows, samples = columns
     heatmap_z = heatmap_z.T
 
-    # ------------------------------------------------
-    # Plot
-    # ------------------------------------------------
+    if heatmap_z.shape[0] < 2 or heatmap_z.shape[1] < 2:
+        print("At least two genes and two samples are needed for clustering.")
+        return
 
-    fig_width = max(
-        8,
-        0.8 * len(heatmap_z.columns)
+    # 5. Calculate hierarchical clustering from expression profiles
+    # Row clustering: distances between genes
+    gene_distances = pdist(
+        heatmap_z.to_numpy(),
+        metric=distance_metric,
+    )
+    gene_linkage = linkage(
+        gene_distances,
+        method=linkage_method,
     )
 
-    fig_height = max(
-        8,
-        0.22 * len(heatmap_z.index)
+    # Column clustering: distances between samples
+    sample_distances = pdist(
+        heatmap_z.to_numpy().T,
+        metric=distance_metric,
+    )
+    sample_linkage = linkage(
+        sample_distances,
+        method=linkage_method,
     )
 
-    plt.figure(
-        figsize=(fig_width, fig_height)
+    # 6. Add condition colors above the heatmap
+    condition_colors = {
+        "Aza": "#4C72B0",
+        "Gua": "#DD8452",
+        "Control": "#55A868",
+    }
+
+    col_colors = sample_metadata["condition"].map(condition_colors)
+    if col_colors.isna().any():
+        missing_conditions = (
+            sample_metadata.loc[col_colors.isna(), "condition"]
+            .unique()
+            .tolist()
+        )
+        raise ValueError(
+            f"No color assigned to conditions: {missing_conditions}"
+        )
+
+    # 7. Plot heatmap with both dendrograms
+    grid = sns.clustermap(
+        heatmap_z,
+        row_linkage=gene_linkage,
+        col_linkage=sample_linkage,
+        row_cluster=True,
+        col_cluster=True,
+        col_colors=col_colors,
+        cmap="vlag",
+        center=0,
+        vmin=-2,
+        vmax=2,
+        figsize=(
+            max(10, 0.8 * heatmap_z.shape[1]),
+            max(8, 0.22 * heatmap_z.shape[0]),
+        ),
+        linewidths=0,
+        xticklabels=True,
+        yticklabels=True,
+        dendrogram_ratio=(0.15, 0.15),
+        cbar_kws={"label": "VST expression (gene-wise Z-score)"},
+        tree_kws={"linewidths": 1.0},
     )
 
-    plt.imshow(
-        heatmap_z.values,
-        aspect="auto",
-        interpolation="nearest"
+    grid.ax_heatmap.set_xlabel("Sample")
+    grid.ax_heatmap.set_ylabel("Gene")
+    grid.ax_heatmap.set_title(
+        f"Significant genes: {comp[1]} vs {comp[2]}",
+        pad=15,
+    )
+    grid.ax_heatmap.tick_params(axis="x", labelrotation=90)
+    grid.ax_heatmap.tick_params(axis="y", labelsize=7)
+
+    legend_handles = [
+        Patch(facecolor=color, label=condition)
+        for condition, color in condition_colors.items()
+        if condition in sample_metadata["condition"].values
+    ]
+
+    grid.ax_heatmap.legend(
+        handles=legend_handles,
+        title="Condition",
+        loc="upper left",
+        bbox_to_anchor=(1.35, 1.0),
+        borderaxespad=0,
     )
 
-    plt.colorbar(
-        label="VST expression\n(row Z-score)"
-    )
-
-    plt.xticks(
-        range(len(heatmap_z.columns)),
-        heatmap_z.columns,
-        rotation=90
-    )
-
-    plt.yticks(
-        range(len(heatmap_z.index)),
-        heatmap_z.index,
-        fontsize=7
-    )
-
-    plt.xlabel("Sample")
-
-    plt.ylabel("Gene")
-
-    plt.title(
-        f"Significant genes: "
-        f"{comp[1]} vs {comp[2]}"
-    )
-
-    plt.tight_layout()
-
-    os.makedirs(
-        os.path.dirname(output_path),
-        exist_ok=True
-    )
-
-    plt.savefig(
+    grid.fig.savefig(
         output_path,
         dpi=300,
-        bbox_inches="tight"
+        bbox_inches="tight",
     )
+    plt.close(grid.fig)
 
-    plt.close()
+    print(
+        f"Clustered heatmap saved: {output_path} "
+        f"({heatmap_z.shape[0]} genes, "
+        f"{heatmap_z.shape[1]} samples)"
+    )
 
 
 if __name__=='__main__':
@@ -422,9 +527,12 @@ if __name__=='__main__':
     data_in, meta = read_in()
     dds = deseq2(data_in, meta)
     group= [["condition", "Aza", "Gua"], ["condition", "Aza", "Control"], ["condition", "Gua", "Control"]]
+    dist_heatmap(dds,meta)
     for g in group:
         ds = stats(dds, g)
+        save(ds)
         show_res(dds, g, ds, meta)
         volcano_plot(ds, g)
         ma_plot(ds, g)
+        ma_plot_pds(ds,g)
         heatmap_significant_genes(dds, ds, meta, g)
