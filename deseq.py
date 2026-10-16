@@ -37,12 +37,13 @@ def read_in():
     return i_d, met
 
 
-def save(res):
-    OUTPUT_PATH = f"results/{config.data_folder}deseq2/"
-    os.makedirs(OUTPUT_PATH, exist_ok=True)
-    res_df = pd.DataFrame(res)
-    print(res_df.head())
-    res_df.to_csv(OUTPUT_PATH, sep='\t')
+def save(res, comp):
+    output_dir = f"results/{config.data_folder}deseq2/"
+    os.makedirs(output_dir, exist_ok=True)
+    res_df = res.results_df.copy()
+    contrast_name = f"{comp[1]}_vs_{comp[2]}"
+    res_path  = os.path.join(output_dir, f"DeSeq2_{contrast_name}.tsv")
+    res_df.to_csv(res_path, sep='\t', index=True, index_labels="gene_id")
 
 
 def deseq2(data_in, metadata):
@@ -530,9 +531,11 @@ if __name__=='__main__':
     dist_heatmap(dds,meta)
     for g in group:
         ds = stats(dds, g)
-        save(ds)
+        save(ds, g)
         show_res(dds, g, ds, meta)
         volcano_plot(ds, g)
         ma_plot(ds, g)
         ma_plot_pds(ds,g)
         heatmap_significant_genes(dds, ds, meta, g)
+        dist_heatmap(dds, meta)
+
