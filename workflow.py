@@ -263,6 +263,6 @@ if __name__=="__main__":
     sam_QC(FILE)
     picard_markdup(FILE)
     quant_mapper_gene(FILE)
-    quant_mapper_gene_all(config.data_folder)
+    #quant_mapper_gene_all(config.data_folder)
     #deseq2()
     multiQC(FILE)

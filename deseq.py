@@ -37,13 +37,13 @@ def read_in():
     return i_d, met
 
 
-def save(res, comp):
+def save(ds, comp):
     output_dir = f"results/{config.data_folder}deseq2/"
     os.makedirs(output_dir, exist_ok=True)
-    res_df = res.results_df.copy()
+    res_df = ds.results_df.copy()
     contrast_name = f"{comp[1]}_vs_{comp[2]}"
     res_path  = os.path.join(output_dir, f"DeSeq2_{contrast_name}.tsv")
-    res_df.to_csv(res_path, sep='\t', index=True, index_labels="gene_id")
+    res_df.to_csv(res_path, sep='\t', index=True, index_label="gene_id")
 
 
 def deseq2(data_in, metadata):
@@ -111,6 +111,7 @@ def show_res(dds, comp, ds, metadata):
     plt.ylabel(f"PC2 ({pca_model.explained_variance_ratio_[1]*100:.1f}%)")
     plt.title("VST-PCA by condition")
     plt.savefig(f'results/{config.data_folder}deseq2/VST_PCA_{comp[1]}_{comp[2]}.png',format='png')
+    plt.close()
 
     print(ds.p_values)
     print(ds.padj)
@@ -273,7 +274,7 @@ def dist_heatmap(dds, metadata):
     samp_dist_matrix = squareform(samp_dist)
 
     sample_labels = [
-        f"{sample_metadata.loc[s, "condition"]}-{s}"
+        f"{sample_metadata.loc[s, 'condition']}-{s}"
         for s in vst_df.index
     ]
 
@@ -357,7 +358,7 @@ def heatmap_significant_genes(
     # columns = genes
 
     vst_df = pd.DataFrame(
-        vst = np.asarray(dds.layers["vst_counts"]),
+        np.asarray(dds.layers["vst_counts"]),
         index=dds.obs_names,
         columns=dds.var_names
     )
@@ -531,11 +532,10 @@ if __name__=='__main__':
     dist_heatmap(dds,meta)
     for g in group:
         ds = stats(dds, g)
-        save(ds, g)
         show_res(dds, g, ds, meta)
+        save(ds, g)
         volcano_plot(ds, g)
         ma_plot(ds, g)
         ma_plot_pds(ds,g)
         heatmap_significant_genes(dds, ds, meta, g)
         dist_heatmap(dds, meta)
-

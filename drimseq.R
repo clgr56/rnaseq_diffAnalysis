@@ -41,6 +41,15 @@ counts <- data.frame(gene_id=txdf$GENEID, feature_id=txdf$TXNAME, cts)
 d <- dmDSdata(counts=counts, samples=samps)
 methods(class=class(d))
 counts(d[1,])[,1:4]
-d <- dmFilter(d, min_samps_gene_expr=3, min_gene_expr=10, min_samps_feature_expr=3,min_feature_expr=10,min_samps_feature_prop=3,min_feature_prop=0.01)
+n_samps <- 9
+n_samps.small <- 3
+d <- dmFilter(d, min_samps_gene_expr=n, min_gene_expr=10, min_samps_feature_expr=n.small,min_feature_expr=10,min_samps_feature_prop=n.small,min_feature_prop=0.01)#min_feature_expr pretty strict (trenscript does not make up more than 10% of gene's expression for at least n.small samlpes): else omit or lower min_feature_prop::swimming downstream
 d
 table(table(counts(d)$gene_id))
+design_full <- model.matrix(~condition, data=DRIMSeq::samples(d))
+colnames(design_full)
+design_full
+#set.seed(1)
+#d <- dmPrecision(d, design=design_full)
+#d <- dmFit(d, design=design_full)
+#d <- dmTest(d, coef="")#what to choose for 3 conditions
