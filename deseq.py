@@ -116,9 +116,9 @@ def show_res(dds, comp, ds, metadata):
     print(ds.p_values)
     print(ds.padj)
     ds.summary()
-    re = ds.results_df
-    re_sig = re.query("padj<0.05").sort_values("padj")
-    print(re_sig)
+    res= ds.results_df
+    res_sig = res.query("padj<0.05").sort_values("padj")
+    print(res_sig)
 
 
 def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
