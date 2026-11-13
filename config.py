@@ -1,8 +1,9 @@
-data_folder="EPIC_CAM_SLR24/"
+data_folder="SLR24_directional_transcriptome/"
 ref_transcript_file="data/ref/gencode.v50.transcripts.fa"
 ref_gene_fasta="data/ref/GRCh38.p14.genome.fa"
 ref_anno_gtf="data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
 #star_align: max(length)-1
+read_length=150
 sjdbOverhang='149'
 #add_read_group=["--outSAMattrRGline", RG, SM,]
 #overal config

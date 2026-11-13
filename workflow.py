@@ -1,5 +1,5 @@
+import os
 import glob
-import numpy as np
 import subprocess
 import config
 
@@ -7,7 +7,12 @@ import config
 def fastQC(file):
     f_list = []
     out_dir = f"results/{file}fastqc"
-    for fname in glob.glob(f'data/{file}*'):
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
+    for fname in glob.glob(f'data/{file}*.fq.gz'):
         f_list.append(fname)
     print("fastQC")
     print(len(f_list))
@@ -20,14 +25,24 @@ def fastQC(file):
 def multiQC(file):
     files_dir = f"results/{file}"
     out_dir = f"results/{file}multiqc"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     print("multiQC")
-    cmd = ["multiqc", files_dir, "--outdir", out_dir]
+    cmd = ["multiqc", files_dir, "--force", "--outdir", out_dir]
     subprocess.run(cmd, check=True)
 
 
 def fastp(files):
     f_list = []
     out_dir = f"results/{files}fastp_trimmed/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     for fname in glob.glob(f'data/{files}*1.fq.gz'):
         f_list.append(fname)
     print("trimming")
@@ -51,6 +66,11 @@ def trim(files):
     print("trim_galore")
     f_list = []
     out_dir = f"results/{files}trimmed/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     for fname in glob.glob(f'data/{files}*1.fq.gz'):
         f_list.append(fname)
     print("trimming")
@@ -66,6 +86,11 @@ def trimmed_fastqc(files):
     print("trimmed_fastqc")
     f_list = []
     out_dir = f"results/{files}fastqc_trimmed/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     for fname in glob.glob(f'results/{files}fastp_trimmed/*.fq.gz'):
         f_list.append(fname)
     print("fastQC")
@@ -78,6 +103,12 @@ def trimmed_fastqc(files):
 
 def iso_quant(files):
     print("salmon indexing")
+    out_dir = f"results/{files}salmon/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     cmd1 = ["salmon", "index", "-p", config.threads, "-t", config.ref_transcript_file, "-i", f"results/{files}salmon/index"]
     subprocess.run(cmd1, check=True)#ref anpassen
     f_list = []
@@ -91,13 +122,20 @@ def iso_quant(files):
         print(f2)
         f_base = f'results/{files}salmon/' +f2[:-11].split('/')[-1] + 'trimmed'
         print(f_base)
-        cmd2 = ["salmon", "quant", "-p", "16", "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--gcBias", "--seqBias", "-o", f_base] #vllt noch --numBootstraps 30 |--numGibbsSamples; inferential replicates for deseq2 DTE
+        cmd2 = ["salmon", "quant", "-p", config.threads, "-i", f"results/{files}salmon/index", "-l", "A", "-1", f, "-2", f2,"--gcBias", "--seqBias", "-o", f_base] #vllt noch --numBootstraps 30 |--numGibbsSamples; inferential replicates for deseq2 DTE
         subprocess.run(cmd2, check=True)
-        #--validateMapping depricated, maybe --gcBias flag (DeSeq2 Vignette)
+        #--validateMapping depricated
 
 
 def star_align_idx(files):
-    print("STAR indexing")   #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
+    print("STAR indexing")   
+    out_dir = f"results/{files}star/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
+    #trying data\ref\gencode.v50.chr_patch_hapl_scaff.annotation.gtf instead of data\ref\gencode.v50.annotation.gtf and w/o "--genomeSAindexNbases", "11",
     subprocess.run(["STAR", "--runMode", "genomeGenerate", "--genomeDir", f"results/{files}star/index/", "--genomeFastaFiles", config.ref_gene_fasta, "--sjdbGTFfile", config.ref_anno_gtf, "--sjdbOverhang", config.sjdbOverhang, "--runThreadN", config.threads], check=True)
     #--sjdbOverhang max.length.read -1
 
@@ -155,17 +193,22 @@ def sam_QC(files):
     print("sam_QC")
     f_list = []
     out_dir = f"results/{files}sam/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for fil in f_list:
         out_f = fil.split('/')[-1]
         out_flagstat = out_dir+out_f[:-4]+'.flagstat.tsv'
-        cmd = ['samtools', 'flagstat', '-@', config.threads, '-O', 'tsv', fil]#, '>', out_flagstat
+        cmd = ['samtools', 'flagstat', '-@', config.threads, '-O', 'tsv', fil]
         with open(out_flagstat, "w",encoding="utf-8") as fi:
             subprocess.call(cmd,stdout=fi)
         #subprocess.run(cmd, check=True)
         out_stats = out_dir+out_f[:-4]+'.stats.txt'
-        cmd_stats = ['samtools', 'stats', '-@', config.threads, '--ref-seq', config.ref_gene_fasta, fil]#, '>', out_stats
+        cmd_stats = ['samtools', 'stats', '-@', config.threads, '--ref-seq', config.ref_gene_fasta, fil]
         with open(out_stats,"w",encoding="utf-8") as f:
             subprocess.call(cmd_stats, stdout=f)
         #subprocess.run(cmd_stats, check=True)
@@ -175,6 +218,11 @@ def picard_markdup(files):
     print("picard_markdup")
     f_list = []
     out_dir = f"results/{files}sam/"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     for fname in glob.glob(f"results/{files}star/*.bam"):
         f_list.append(fname)
     for f in f_list:
@@ -187,6 +235,12 @@ def picard_markdup(files):
 
 def quant_mapper_gene(files):
     print("quant_mapper_gene")
+    out_dir = f'results/{files}feature_counts'
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Directory {out_dir} created successfully")
+    except OSError:
+        print(f"Directory {out_dir} can not be created")
     mode = config.mode
     for mod in mode:
         f_list = []
@@ -199,11 +253,11 @@ def quant_mapper_gene(files):
         string_list = f_list#" ".join(f_list)
         print(string_list)
         outfile = f'results/{files}feature_counts/counts_{mod}_feature.txt'
-        cmd = ['featureCounts', '-T', config.threads, '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
+        cmd = ['featureCounts', '-T', config.threads, '-p', '--countReadPairs', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf] # '-M' --fraction
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
-        #--countReadPairs for counting features; -M for countMultiMappingReads: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count) -> vllt weglassen
+        #--countReadPairs for counting features; -M for countMultiMappingReads?????: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count) -> vllt weglassen
         #-p paired-end;
         outfile2 = f'results/{files}feature_counts/counts_{mod}_reads.txt'
         del cmd[4]
@@ -212,30 +266,8 @@ def quant_mapper_gene(files):
         subprocess.run(cmd, check=True)
 
 
-def quant_mapper_gene_all(complete):
-    print("quant_mapper_gene_all")
-    f_list = []
-    for l in complete:
-        for fname in glob.glob(f'results/{l}star/*.bam'):
-            f_list.append(fname)
-    string_list = f_list#" ".join(f_list)
-    print(string_list)
-    outfile = 'results/feature_counts/counts_all_feature.txt'
-    cmd = ['featureCounts', '-T', config.threads, '-p', '--countReadPairs', '-M', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf]
-    cmd.extend(['-o', outfile])
-    cmd.extend(string_list)
-    subprocess.run(cmd, check=True)
-    #--countReadPairs for counting features; -M for countMultiMappingReads: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count)
-    #-p paired-end;
-    outfile2 = 'results/feature_counts/counts_all_reads.txt'
-    del cmd[4]
-    del cmd[12]
-    cmd.insert(12,outfile2)
-    subprocess.run(cmd, check=True)
-
-
 def deseq2():
-    '''chenge to shellscript fot new envs needed with R scripts/dockerfiles or others. 
+    '''change to shellscript fot new envs needed with R scripts/dockerfiles or others. 
         change conda env with:
         source ~/miniconda3/etc/profile.d/conda.sh # Or path to where your conda is
         conda activate some-conda-environment
@@ -248,13 +280,10 @@ def deseq2():
     #subprocess.run(cmd,check=True)
 
 
-def drimseq():
-    pass
-
-
 if __name__=="__main__":
     #for file in config.data_folder:
     FILE = config.data_folder
+    #first run
     fastQC(FILE)
     fastp(FILE)
     trimmed_fastqc(FILE)
@@ -262,12 +291,15 @@ if __name__=="__main__":
     trim(FILE)
     iso_quant(FILE)
     star_align_idx(FILE)
-    star_align(FILE)
-    bam_bai(FILE)
-    sam_depth(FILE)
-    sam_QC(FILE)
-    picard_markdup(FILE)
-    quant_mapper_gene(FILE)
-    #quant_mapper_gene_all(config.data_folder)
+    #second run
+    #star_align(FILE)
+    #bam_bai(FILE)
+    #sam_depth(FILE)
+    #sam_QC(FILE)
+    #picard_markdup(FILE)
+    #quant_mapper_gene(FILE)
+    #not attached
     #deseq2()
+    #drimseq via r docker
+    #dexseq via r docker
     multiQC(FILE)

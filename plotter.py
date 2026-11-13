@@ -85,7 +85,7 @@ def venn_dia(all_data, labels=('Aza vs Control', 'Gua vs Control', 'Aza vs Gua')
     )
     for nam, transcript_set in csv_res.items():
         df = pd.DataFrame(sorted(transcript_set), columns=['feature_id'])
-        df.to_csv(f'../SLR24_results/drimseq/{nam}_sign.csv',index=False)
+        df.to_csv(f'..results/EPIC_CAM_SLR24/drimseq/{nam}_sign.csv',index=False)
     return stats_df
 
 

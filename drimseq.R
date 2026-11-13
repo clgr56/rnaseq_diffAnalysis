@@ -56,6 +56,8 @@ n_samps.small <- 3
 d <- dmFilter(d, min_samps_gene_expr=n_samps, min_gene_expr=10, min_samps_feature_expr=n_samps.small,min_feature_expr=10,min_samps_feature_prop=n_samps.small,min_feature_prop=0.1)#min_feature_expr pretty strict (trenscript does not make up more than 10% of gene's expression for at least n.small samlpes): else omit or lower min_feature_prop::swimming downstream
 d
 table(table(counts(d)$gene_id))
+saveRDS(d, 'results/salmon/drimseqfilter_obj.rds', compress=TURE)
+
 #DRIMSeq::samples(d)$condition <- factor(DRIMSeq::samples(d)$condition, levels = c("Control", "Aza", "Gua"))#should changes intercept/ref to Control
 design_full <- model.matrix(~condition, data=DRIMSeq::samples(d))
 colnames(design_full)
@@ -76,7 +78,13 @@ head(res_aza)
 res_aza.txp <- DRIMSeq::results(d_aza, level="feature")
 head(res_aza.txp)
 
-results <- list(res_gua = DRIMSeq::results(d_aza), res_gua_txp = DRIMSeq::results(d_aza, level="feature"), res_aza=DRIMSeq::results(d_gua), res_aza_txp=DRIMSeq::results(d_gua, level="feature"), res_coef=DRIMSeq::results(d_coef), res_coef_txp=DRIMSeq::results(d_coef, level="feature"), res_any=DRIMSeq::results(d_any))
+results <- list(res_gua = DRIMSeq::results(d_aza),
+                res_gua_txp = DRIMSeq::results(d_aza, level="feature"),
+                res_aza=DRIMSeq::results(d_gua), 
+                res_aza_txp=DRIMSeq::results(d_gua, level="feature"), 
+                res_coef=DRIMSeq::results(d_coef), 
+                res_coef_txp=DRIMSeq::results(d_coef, level="feature"), 
+                res_any=DRIMSeq::results(d_any))
 no.na <- function(x) ifelse(is.na(x), 1, x)
 out_dir <- "results/drimseq"
 for (nam in names(results)) {

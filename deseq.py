@@ -6,6 +6,7 @@ import numpy as np
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from sklearn.manifold import MDS
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage
 import seaborn as sns
@@ -19,12 +20,13 @@ from pydeseq2.ds import DeseqStats
 def read_in():
     data_path = f"results/{config.data_folder}feature_counts/"
     counts_df = pd.read_csv(os.path.join(data_path, "counts_all_feature.txt"), skiprows=1, sep='\t', index_col=0)#config with counts_{mod}_{reads_feature}
-    print(counts_df.iloc[:,:12].T)
-    in_de = counts_df.iloc[:,-12:].T
+    print(counts_df.iloc[:,5:].T)
+    in_de = counts_df.iloc[:,5:].T
     in_deseq2 = in_de.filter(regex='^results', axis=0)
     #write file for names, condition, time, batch
     print(in_deseq2)
-    sample_names = [f"{re.split('/',x)[3][:-37]}" for x in in_deseq2.index]
+    suffix = '_trimmedAligned.sortedByCoord.out.bam'
+    sample_names = [f"{re.split('/',x)[3][:len(suffix)]}" for x in in_deseq2.index]#:-37
     in_deseq2.index = sample_names
     metadata = pd.DataFrame(index=sample_names)#config 'seq_batch':seq_batch
     metadata['condition'] = sum(metadata.index.str.extract(r"^(Aza|Gua|Control)").values.tolist(),[])
@@ -75,7 +77,7 @@ def deseq2(data_in, metadata):
 def stats(dds, group):
     ds = DeseqStats(
         dds,
-        contrast=group, #confusing namespace in output table
+        contrast=group,
         alpha=0.05,
         cooks_filter=True,
         independent_filter=True,
@@ -186,7 +188,7 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
 
     plt.xlabel(f"log2 fold change ({comp[1]} vs {comp[2]})")
     plt.ylabel("-log10 adjusted p-value")
-    plt.title(f"DESeq2: {comp[1]} vs {comp[2]} sequencing model")
+    #plt.title(f"DESeq2: {comp[1]} vs {comp[2]} sequencing model")
     plt.legend()
     plt.tight_layout()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -199,6 +201,76 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
     print("signifikant down:", down.sum())
     print("Total significants:", (up | down).sum())
     print(f"Volcano plot saved to: {output_path}")
+
+
+def mds_plot(dds, metadata):
+    output_path = {f"results/{config.data_folder}deseq2/MDS_plot.png"}
+    if "vst_counts" not in dds.layers:
+        dds.vst()
+    vst_df = pd.DataFrame(
+        np.asarray(dds.layers["vst_counts"]),
+        index=dds.obs_names,
+        columns=dds.var_names
+    )
+    metadata = metadata.loc[vst_df.index]
+    dist = pdist(vst_df.values, metric="euclidean")
+    D = squareform(dist)
+    n = D.shape[0]
+    J = np.eye(n) - np.ones((n, n)) / n
+    B = -0.5 * J @ (D ** 2) @ J
+    eigenvalues, eigenvectors = np.linalg.eigh(B)
+    order = np.argsort(eigenvalues)[::-1]
+    eigenvalues = eigenvalues[order]
+    eigenvectors = eigenvectors[:, order]
+    positive = eigenvalues > 1e-10
+    eigenvalues = eigenvalues[positive]
+    eigenvectors = eigenvectors[:, positive]
+    if len(eigenvalues) < 2:
+        raise ValueError("MDS requires at least two positive eigenvalues.")
+    coordinates = (
+        eigenvectors[:, :2]
+        * np.sqrt(eigenvalues[:2])
+    )
+    explained = eigenvalues / eigenvalues.sum() * 100
+    condition_colors = {
+        "Aza": "#4C72B0",
+        "Gua": "#DD8452",
+        "Control": "#55A868"
+    }
+    fig, ax = plt.subplots(figsize=(9, 7))
+    for condition, color in condition_colors.items():
+        mask = metadata["condition"].values == condition
+        ax.scatter(
+            coordinates[mask, 0],
+            coordinates[mask, 1],
+            color=color,
+            label=condition,
+            s=80,
+            alpha=0.85
+        )
+    for i, sample in enumerate(vst_df.index):
+        ax.annotate(
+            sample,
+            (coordinates[i, 0], coordinates[i, 1]),
+            xytext=(5, 5),
+            textcoords="offset points",
+            fontsize=8
+        )
+    ax.set_xlabel(
+        f"MDS1 ({explained[0]:.1f}%)"
+    )
+    ax.set_ylabel(
+        f"MDS2 ({explained[1]:.1f}%)"
+    )
+    ax.set_title("MDS of VST-transformed RNA-seq samples")
+    ax.axhline(0, color="grey", linewidth=0.5, alpha=0.5)
+    ax.axvline(0, color="grey", linewidth=0.5, alpha=0.5)
+    ax.legend(title="Condition")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"MDS plot saved: {output_path}")
+    print(f"Explained eigenvalue proportions: {explained[:3]}")
 
 
 def ma_plot(ds, comp, padj_cutoff = 0.05, lfc_cutoff=1):
@@ -528,6 +600,8 @@ if __name__=='__main__':
     #save(False)
     data_in, meta = read_in()
     dds = deseq2(data_in, meta)
+    dist_heatmap(dds, meta)
+    mds_plot(dds,meta)
     group= [["condition", "Aza", "Gua"], ["condition", "Aza", "Control"], ["condition", "Gua", "Control"]]
     dist_heatmap(dds,meta)
     for g in group:
@@ -538,4 +612,5 @@ if __name__=='__main__':
         ma_plot(ds, g)
         ma_plot_pds(ds,g)
         heatmap_significant_genes(dds, ds, meta, g)
-        dist_heatmap(dds, meta)
+        #dist_heatmap(dds, meta)
+        #mds_plot(dds,meta)
