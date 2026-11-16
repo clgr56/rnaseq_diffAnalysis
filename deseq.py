@@ -204,7 +204,7 @@ def volcano_plot(ds, comp, padj_cutoff=0.05, lfc_cutoff=1, label_top=10):
 
 
 def mds_plot(dds, metadata):
-    output_path = {f"results/{config.data_folder}deseq2/MDS_plot.png"}
+    output_path = f"results/{config.data_folder}deseq2/MDS_plot.png"
     if "vst_counts" not in dds.layers:
         dds.vst()
     vst_df = pd.DataFrame(

@@ -3,12 +3,6 @@ library("DRIMSeq")
 library(GenomicFeatures)
 library(tximport)
 
-txi <- tximport(files, type="salmon", txOut=TRUE, countsFromAbundance="scaledTPM")#tximport DTU checken nach countsFromAbundace = "dtuScaledTPM" statt scaled.TPM
-cts <- txi$counts
-cts <- cts[rowSums(cts)>0,]
-rownames(cts) <- sub("\\|.*$", "", rownames(cts)) #fixing rownames to match with gtf file
-head(cts)
-
 gtf <- "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
 txdb.filename <- "gencode.50.annotation.sqlite"
 new_txdb <- loadDb(txdb.filename)

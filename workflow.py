@@ -253,16 +253,16 @@ def quant_mapper_gene(files):
         string_list = f_list#" ".join(f_list)
         print(string_list)
         outfile = f'results/{files}feature_counts/counts_{mod}_feature.txt'
-        cmd = ['featureCounts', '-T', config.threads, '-p', '--countReadPairs', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf] # '-M' --fraction
+        cmd = ['featureCounts', '-T', config.threads, '-p', '-B', '-C', '--countReadPairs', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf] # '-M' --fraction
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
         #--countReadPairs for counting features; -M for countMultiMappingReads?????: ully count every alignment reported for a multi-mapping read (each alignment carries 1 count) -> vllt weglassen
         #-p paired-end;
         outfile2 = f'results/{files}feature_counts/counts_{mod}_reads.txt'
-        del cmd[4]
-        del cmd[12]
-        cmd.insert(12,outfile2)
+        del cmd[6]
+        del cmd[13]
+        cmd.insert(13,outfile2)
         subprocess.run(cmd, check=True)
 
 
