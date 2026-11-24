@@ -11,6 +11,10 @@ threads='36'
 #feature_counts
 #['UC', 'GM', 'IR', 'all']
 mode=['Aza', 'Gua', 'Control', 'all']
+strandedness='ISR'
+fc_isr = '2'
+dexseq_isr= "reverse"
+picard_isr= "SECOND_READ_TRANSCRIPTION_STRAND"
 #deseq
 #SLR24
 

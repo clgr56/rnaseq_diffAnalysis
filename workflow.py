@@ -58,7 +58,7 @@ def fastp(files):
         print(out_1)
         print(out_2)
         print(out_report)
-        cmd = ["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", config.threads, "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json]
+        cmd = ["fastp", "-i", f, "-I", f2, "-o", out_1, "-O", out_2, "--thread", "16", "--detect_adapter_for_pe", "--trim_poly_x", "-h", out_html, "-j", out_json]# can't handle 36 threads
         subprocess.run(cmd, check=True)
 
 
@@ -78,7 +78,7 @@ def trim(files):
         print(f)
         f2 = f[:-7]
         f2 = f2 + '2.fq.gz'
-        cmd = ["trim_galore", "--paired", f, f2, "-o", out_dir]
+        cmd = ["trim_galore", "--paired", f, f2, 'cores', '16', "-o", out_dir]
         subprocess.run(cmd, check=True)
 
 
@@ -253,7 +253,7 @@ def quant_mapper_gene(files):
         string_list = f_list#" ".join(f_list)
         print(string_list)
         outfile = f'results/{files}feature_counts/counts_{mod}_feature.txt'
-        cmd = ['featureCounts', '-T', config.threads, '-p', '-B', '-C', '--countReadPairs', '-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf] # '-M' --fraction
+        cmd = ['featureCounts', '-T', config.threads, '-p', '-B', '-C', '--countReadPairs', '-s', '2','-t', 'exon', '-g', 'gene_id', '-a', config.ref_anno_gtf] # '-M' --fraction
         cmd.extend(['-o', outfile])
         cmd.extend(string_list)
         subprocess.run(cmd, check=True)
@@ -261,8 +261,8 @@ def quant_mapper_gene(files):
         #-p paired-end;
         outfile2 = f'results/{files}feature_counts/counts_{mod}_reads.txt'
         del cmd[6]
-        del cmd[13]
-        cmd.insert(13,outfile2)
+        del cmd[15]
+        cmd.insert(15,outfile2)
         subprocess.run(cmd, check=True)
 
 

@@ -4,14 +4,6 @@ library(GenomicFeatures)
 library(tximport)
 
 gtf <- "data/ref/gencode.v50.chr_patch_hapl_scaff.annotation.gtf"
-txdb.filename <- "gencode.50.annotation.sqlite"
-new_txdb <- loadDb(txdb.filename)
-txdf <- select(new_txdb, keys(new_txdb, "GENEID"),"TXNAME","GENEID")
-head(txdf)
-tab <- table(txdf$GENEID)
-txdf$ntx <- tab[match(txdf$GENEID, names(tab))]
-
-counts <- data.frame(gene_id=txdf$GENEID, feature_id=txdf$TXNAME, cts)
 
 d <- readRDS('results/salmon/drimseqfilter_obj.rds', refhook=NULL)
 sample.data <- DRIMSeq::samples(d)
