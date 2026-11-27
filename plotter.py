@@ -81,19 +81,19 @@ def venn_dia(all_data, labels=('Aza vs Control', 'Gua vs Control', 'Aza vs Gua')
     }
     stats_df = pd.DataFrame(stats)
     stats_df.to_csv(
-        f'../results/{config.data_folder}/drimseq/venn_statistics.csv',
+        f'../results/{config.data_folder}drimseq/venn_statistics.csv',
         index=False
     )
     for nam, transcript_set in csv_res.items():
         df = pd.DataFrame(sorted(transcript_set), columns=['feature_id'])
-        df.to_csv(f'../results/{config.data_folder}/drimseq/{nam}_sign.csv',index=False)
+        df.to_csv(f'../results/{config.data_folder}drimseq/{nam}_sign.csv',index=False)
     return stats_df
 
 
 if __name__=='__main__':
-    f_path = [f'../results/{config.data_folder}/drimseq/res_aza_txp.csv',
-              f'../results/{config.data_folder}/drimseq/res_gua_txp.csv',
-              f'../results/{config.data_folder}/drimseq/res_coef_txp.csv']
+    f_path = [f'../results/{config.data_folder}drimseq/res_aza_txp.csv',
+              f'../results/{config.data_folder}drimseq/res_gua_txp.csv',
+              f'../results/{config.data_folder}drimseq/res_coef_txp.csv']
     all_data_list = []
     for path in f_path:
         data = filter_csv(get_csv(path))

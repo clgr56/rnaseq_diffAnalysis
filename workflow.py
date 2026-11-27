@@ -235,7 +235,7 @@ def picard_markdup(files):
 
 def quant_mapper_gene(files):
     print("quant_mapper_gene")
-    out_dir = f'results/{files}feature_counts'
+    out_dir = f'results/{files}feature_counts/'
     try:
         os.makedirs(out_dir, exist_ok=True)
         print(f"Directory {out_dir} created successfully")

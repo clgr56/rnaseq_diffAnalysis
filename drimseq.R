@@ -4,12 +4,12 @@ library("GenomicFeatures")
 library("DRIMSeq")
 library("txdbmaker")
 library("BiocParallel")
-library('ggplot2')
+library("ggplot2")
 
 ###trying BiocParallel() for time savings and adding threads_number
 
-csv_dir <- "results"
-samps <- read.csv(file.path(csv_dir, "script/samples.csv"))
+csv_dir <- "script"
+samps <- read.csv(file.path(csv_dir, "samples.csv"))
 head(samps)
 samps$condition <- factor(samps$condition, levels=c("Control","Aza","Gua"))
 quant_dir <- "results/salmon"
